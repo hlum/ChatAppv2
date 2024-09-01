@@ -17,6 +17,8 @@ struct FirebaseConstants{
     static let recipientProfileUrl = "recipient_profile_url"
     static let senderEmail = "email"
     static let recipientEmail = "recipient_email"
+    static let senderProfileUrl = "sender_profile_url"
+    static let documentId = "document_id"
 }
 
 
@@ -25,10 +27,10 @@ struct MessageModel:Identifiable, Codable,Hashable{
     let documentId :String
     let fromId,toId,text: String
     let dateCreated : Timestamp
-    let profileImageUrl: String
     let recipientProfileUrl: String
     let recipientEmail:String
     let senderEmail:String
+    let senderProfileUrl:String
     
     init(
         id:String,
@@ -37,10 +39,10 @@ struct MessageModel:Identifiable, Codable,Hashable{
         toId:String,
         text:String,
         dateCreated:Timestamp,
-        profileImageUrl:String,
         recipientProfileUrl:String,
         recipientEmail:String,
-        senderEmail:String
+        senderEmail:String,
+        senderProfileUrl:String
     ){
         self.id = id
         self.documentId = documentId
@@ -48,10 +50,10 @@ struct MessageModel:Identifiable, Codable,Hashable{
         self.toId = toId
         self.text = text
         self.dateCreated = dateCreated
-        self.profileImageUrl = profileImageUrl
         self.recipientEmail = recipientEmail
         self.recipientProfileUrl = recipientProfileUrl
         self.senderEmail = senderEmail
+        self.senderProfileUrl = senderProfileUrl
     }
     
     init(documentId:String,data:[String:Any]) {
@@ -60,10 +62,10 @@ struct MessageModel:Identifiable, Codable,Hashable{
         self.toId = data[FirebaseConstants.toId] as? String ?? ""
         self.text = data[FirebaseConstants.text] as? String ?? ""
         self.dateCreated = data[FirebaseConstants.dateCreated] as? Timestamp ?? Timestamp()
-        self.profileImageUrl = data[FirebaseConstants.profileImageUrl] as? String ?? ""
         self.recipientProfileUrl = data[FirebaseConstants.recipientProfileUrl] as? String ?? ""
         self.recipientEmail = data[FirebaseConstants.recipientEmail] as? String ?? ""
         self.senderEmail = data[FirebaseConstants.senderEmail] as? String ?? ""
+        self.senderProfileUrl = data[FirebaseConstants.senderProfileUrl] as? String ?? ""
     }
     
     enum CodingKeys:String, CodingKey {
@@ -73,10 +75,10 @@ struct MessageModel:Identifiable, Codable,Hashable{
         case toId = "to_id"
         case text = "text"
         case dateCreated = "date_created"
-        case profileImageUrl = "profile_image_url"
         case recipientProfileUrl = "recipient_profile_url"
         case recipientEmail = "recipient_email"
         case senderEmail = "sender_email"
+        case senderProfileUrl = "sender_profile_url"
     }
     
     init(from decoder: any Decoder) throws {
@@ -87,10 +89,10 @@ struct MessageModel:Identifiable, Codable,Hashable{
         self.toId = try container.decode(String.self, forKey: .toId)
         self.text = try container.decode(String.self, forKey: .text)
         self.dateCreated = try container.decode(Timestamp.self, forKey: .dateCreated)
-        self.profileImageUrl = try container.decode(String.self, forKey: .profileImageUrl)
         self.recipientProfileUrl = try container.decode(String.self, forKey: .recipientProfileUrl)
         self.recipientEmail = try container.decode(String.self, forKey: .recipientEmail)
         self.senderEmail = try container.decode(String.self, forKey: .senderEmail)
+        self.senderProfileUrl = try container.decode(String.self, forKey: .senderProfileUrl)
     }
     
     func encode(to encoder: any Encoder) throws {
@@ -101,10 +103,10 @@ struct MessageModel:Identifiable, Codable,Hashable{
         try container.encode(self.toId, forKey: .toId)
         try container.encode(self.text, forKey: .text)
         try container.encode(self.dateCreated, forKey: .dateCreated)
-        try container.encode(self.profileImageUrl, forKey: .profileImageUrl)
         try container.encode(self.recipientProfileUrl, forKey: .recipientProfileUrl)
         try container.encode(self.recipientEmail, forKey: .recipientEmail)
         try container.encode(self.senderEmail, forKey: .senderEmail)
+        try container.encode(self.senderProfileUrl, forKey: .senderProfileUrl)
     }
 
 }
