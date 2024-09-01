@@ -10,19 +10,46 @@ import FirebaseCore
 
 
 
+
 class ChatLogViewModel:ObservableObject{
-    @Published var currentUser:AuthDataResultModel? = AuthenticationManager.shared.currentUser
+//    @Published var currentUser:AuthDataResultModel? = AuthenticationManager.shared.currentUser
+    @Published var currentUserDB : DBUser? = nil
     @Published var chatMessages:[MessageModel] = []
     @Published var textFieldText:String = ""
     let recipient : DBUser?
-    init(recipient:DBUser){
+    init(recipient: DBUser) {
         self.recipient = recipient
-        fetchMessages()
+        fetchCurrentDBUser { user in
+            if user != nil{
+                self.fetchMessages()
+            }else{
+                print("ChatlogViewModel/init:NO user found")
+            }
+        }
+        
+    }
+    func fetchCurrentDBUser(completion:@escaping(DBUser?)->()){
+        let currentUser =  try? AuthenticationManager.shared.getAuthenticatedUser()
+        guard let userId = currentUser?.uid else{
+            print("ChatLogView/fetchCurrentDBUser:Can't get currentUserId")
+            return
+        }
+        Task{
+    
+                let user = try? await UserManager.shared.getUser(userId: userId)
+                DispatchQueue.main.async{
+                    print("ChatLogView/fetchCurrentDBUser:Successfully fetched current user data")
+                    self.currentUserDB = user
+                    completion(user)
+                }
+            
+    }
+        
     }
     
     
     func sendMessage() async{
-        guard let fromId = self.currentUser?.uid
+        guard let fromId = self.currentUserDB?.userId
             else{
                 print("Can't get current user id")
                 return
@@ -39,10 +66,10 @@ class ChatLogViewModel:ObservableObject{
             FirebaseConstants.toId: toId,
             FirebaseConstants.text: self.textFieldText,
             FirebaseConstants.dateCreated: Timestamp(),
-            FirebaseConstants.profileImageUrl: currentUser?.photoURL ?? "",
             FirebaseConstants.recipientProfileUrl:recipient?.photoUrl ?? "",
             FirebaseConstants.recipientEmail : recipient?.email ?? "",
-            FirebaseConstants.senderEmail : currentUser?.email ?? ""
+            FirebaseConstants.senderEmail : currentUserDB?.email ?? "",
+            FirebaseConstants.senderProfileUrl:currentUserDB?.photoUrl ?? "Chat log : No image url"
         ] as [String : Any]
         
         let message = MessageModel(documentId: "", data: messageData)
@@ -54,7 +81,12 @@ class ChatLogViewModel:ObservableObject{
     }
     
     func fetchMessages() {
-        UserManager.shared.getMessages(fromId: currentUser?.uid, toId: recipient?.userId) { [weak self] message in
+        guard let fromId = self.currentUserDB?.userId else{
+            print("ChatLogViewModel/fetchMessages : Can't get current user id")
+            return
+        }
+        
+        UserManager.shared.getMessages(fromId: fromId, toId: recipient?.userId) { [weak self] message in
             DispatchQueue.main.async {
                 self?.chatMessages.append(message)
                 print("Appended new message: \(message.text)")

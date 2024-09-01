@@ -150,10 +150,10 @@ final class UserManager{
             toId: message.toId,
             text: message.text,
             dateCreated: message.dateCreated,
-            profileImageUrl: message.profileImageUrl,
-            recipientProfileUrl: message.recipientProfileUrl,//change later
+            recipientProfileUrl: message.senderProfileUrl,//change later
             recipientEmail: message.senderEmail,
-            senderEmail: message.recipientEmail
+            senderEmail: message.recipientEmail,
+            senderProfileUrl: message.recipientProfileUrl
         )
         
         do {
@@ -170,11 +170,11 @@ final class UserManager{
 
     func getMessages(fromId: String?, toId: String?, completion: @escaping (MessageModel) -> Void) {
         guard let fromId = fromId else {
-            print("No fromId provided")
+            print("UserManager/getMessages:No fromId provided")
             return
         }
         guard let toId = toId else {
-            print("No toId provided")
+            print("UserManager/getMessages:No toId provided")
             return
         }
         
