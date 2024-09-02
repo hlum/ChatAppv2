@@ -37,6 +37,7 @@ class MainViewMessageViewModel:ObservableObject{
     
     func logOut(){
         AuthenticationManager.shared.signOut()
+        self.chatUser = nil
     }
     
     

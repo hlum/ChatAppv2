@@ -23,6 +23,25 @@ final class LogInViewModel:ObservableObject {
     @Published var imageData: UIImage? = nil
     //    @Published var isUserCurrentlyLoggedOut:Bool = true
     
+    
+    func loadImage() {
+    
+        Task {
+            if let imageItem = imageItem,
+               let data = try? await imageItem.loadTransferable(type: Data.self) {
+                if let uiImage = UIImage(data: data) {
+                    DispatchQueue.main.async {
+                        self.imageData = uiImage
+                    }
+                } else {
+                    print("LoginView: Failed to create UIImage")
+                }
+            } else {
+                print("LoginView: Failed to load image data")
+            }
+        }
+    }
+    
     func handleAction()async{
         if self.isLoginMode {
             await self.signInUser()
@@ -92,15 +111,7 @@ struct LogInView: View {
             .navigationViewStyle(StackNavigationViewStyle())
         }
         .onChange(of: vm.imageItem) {
-            Task {
-                if let loaded = try? await vm.imageItem?.loadTransferable(type: Data.self) {
-                    if let imageData = UIImage(data: loaded){
-                        vm.imageData = imageData
-                    }
-                } else {
-                    print("Failed to select Image")
-                }
-            }
+            vm.loadImage()
         }
         
     }
