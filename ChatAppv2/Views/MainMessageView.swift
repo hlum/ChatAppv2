@@ -130,7 +130,9 @@ extension MainMessageView{
                     )
                     .shadow(radius: 5)
             } placeholder: {
-                ProgressView(value: 0.4)
+                ProgressView(value: 0.8)
+                    .frame(width: 50,height: 50)
+                    .padding()
             }
 
             VStack(alignment:.leading,spacing: 4){

@@ -60,7 +60,7 @@ final class LogInViewModel: ObservableObject {
                 
                 
         do {
-            let authDataResult = try await AuthenticationManager.shared.signIn(email: self.email, password: self.password)
+            let authDataResult = try await AuthenticationManager.shared.createNewUser(email: self.email, password: self.password)
             
             DispatchQueue.main.async {
                 self.loginStatusMessage = "Account Created Successfully"
@@ -102,7 +102,7 @@ final class LogInViewModel: ObservableObject {
 }
 
 struct LogInView: View {
-    @ObservedObject var vm = LogInViewModel()
+    @StateObject var vm = LogInViewModel()
     @Binding var isUserCurrentlyLoggedOut : Bool
     var body: some View {
         
