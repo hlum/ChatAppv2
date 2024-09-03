@@ -4,35 +4,32 @@ import SDWebImageSwiftUI
 
 class MainViewMessageViewModel:ObservableObject{
     @Published var showLogOutOption : Bool = false
-    @Published var chatUser : DBUser? = nil //currentUser
+    @Published var chatUser : DBUser? = nil // currentUser
     @Published var isUserCurrentlyLoggedOut:Bool = true
     @Published var showNewMessageView:Bool = false
     @Published var selectedRecipient:DBUser? = nil
     @Published var recentMessages: [MessageModel] = []
     
     
+    
     init(){
-        fetchUserData()
         self.isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
-        fetchRecentMessages()
-        print(recentMessages.count)
-    }
+        }
     
-    
-    
-    private func fetchUserData() {
+    func fetchUserData()async {
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser()else {
             print("MainViewMessageViewModel:Can't fetch user data")
             return
         }
-        Task{
+        
             let user = try? await UserManager.shared.getUser(userId: authDataResult.uid)
             
             DispatchQueue.main.async{
                 self.chatUser = user
+                print("MainMessageViewModel:Added chat user")
             }
             print("MainViewMessageViewModel:Successfully fetched user data")
-        }
+        
     }
     
     func logOut(){
@@ -87,7 +84,6 @@ class MainViewMessageViewModel:ObservableObject{
 
 struct MainMessageView: View {
     @StateObject var vm = MainViewMessageViewModel()
-    
     var body: some View {
         NavigationStack{
             
@@ -96,9 +92,13 @@ struct MainMessageView: View {
                 ScrollView{
                     messagesView
                 }
-                
-                
             }
+            .onAppear(perform: {
+                Task{
+                    await vm.fetchUserData()
+                    vm.fetchRecentMessages()
+                }
+            })
             .navigationDestination(item: $vm.selectedRecipient, destination: { user in
                 Text(user.email ?? "")
                 ChatLogView(recipient: user)
@@ -114,7 +114,7 @@ struct MainMessageView: View {
 extension MainMessageView{
     private var customNavBar:some View{
         HStack{
-            AsyncImage(url: URL(string: vm.chatUser?.photoUrl ?? "")) { image in
+            WebImage(url: URL(string: vm.chatUser?.photoUrl ?? "NO Image url found")) { image in
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -126,12 +126,9 @@ extension MainMessageView{
                     )
                     .shadow(radius: 5)
             } placeholder: {
-                ProgressView()
+                ProgressView(value: 0.4)
             }
-            
-            
-            //            Image(systemName: "person.fill")
-            //                .font(.system(size:34,weight: .heavy))
+
             VStack(alignment:.leading,spacing: 4){
                 let email = vm.chatUser?.email ?? "can't find userEmail"
                 Text(email.replacingOccurrences(of: "@gmail.com", with: "さん"))
@@ -167,10 +164,14 @@ extension MainMessageView{
                 
             ])
         }
-        .fullScreenCover(isPresented: $vm.isUserCurrentlyLoggedOut, onDismiss: nil) {
-            LogInView(isUserCurrentlyLoggedOut: $vm.isUserCurrentlyLoggedOut)
+        .fullScreenCover(isPresented:$vm.isUserCurrentlyLoggedOut,onDismiss: {
+            Task{
+                await vm.fetchUserData()
+                vm.fetchRecentMessages()
+            }
+        })  {
+            LogInView(isUserCurrentlyLoggedOut:$vm.isUserCurrentlyLoggedOut)
         }
-        
     }
     
     
@@ -202,34 +203,6 @@ extension MainMessageView{
                                 .padding()
                             
                         }
-                        
-                        
-                        //                        AsyncImage(url: URL(string: recentMessage.recipientProfileUrl)) { phase in
-                        //                            if let error = phase.error {
-                        //                                Text("Error loading image: \(error.localizedDescription)")
-                        //                            }
-                        //                            if let image = phase.image{
-                        //                                image.resizable()
-                        //                            }
-                        //
-                        //                        }
-                        //                        AsyncImage(url: URL(string: recentMessage.recipientProfileUrl)) { image in
-                        //                            image
-                        //                                .resizable()
-                        //                                .aspectRatio(contentMode: .fill)
-                        //                                .frame(width:65,height: 65)
-                        //                                .cornerRadius(65)
-                        //                                .overlay(RoundedRectangle(cornerRadius: 44)
-                        //                                    .stroke(Color(.label),lineWidth: 1)
-                        //                                )
-                        //                                .padding()
-                        
-                        //                        } placeholder: {
-                        //                            ProgressView()
-                        //                                .frame(width: 65,height: 65)
-                        //                                .padding()
-                        //                        }
-                        
                         
                         VStack(alignment:.leading){
                             if recentMessage.senderEmail == vm.chatUser?.email ?? ""{

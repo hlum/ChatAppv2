@@ -17,7 +17,7 @@ final class AuthenticationManager: ObservableObject{
     private init(){
         self.currentUser = try? getAuthenticatedUser()
     }
-        
+    @discardableResult
     func getAuthenticatedUser() throws -> AuthDataResultModel{
         guard let user = Auth.auth().currentUser else{
             print("No user found")
@@ -45,6 +45,7 @@ final class AuthenticationManager: ObservableObject{
     }
     
     func checkIfUserIsAuthenticated() -> Bool{
+        
         return Auth.auth().currentUser != nil
     }
 }
