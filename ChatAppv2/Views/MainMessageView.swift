@@ -34,6 +34,7 @@ class MainViewMessageViewModel:ObservableObject{
     
     func logOut(){
         AuthenticationManager.shared.signOut()
+        self.recentMessages = []
         self.chatUser = nil
     }
     
@@ -48,7 +49,7 @@ class MainViewMessageViewModel:ObservableObject{
         UserManager.shared.recentMessagesCollection
             .document(userId)
             .collection("messages")
-            .order(by: FirebaseConstants.dateCreated, descending: true)
+            .order(by: FirebaseConstants.dateCreated, descending: false)
             .addSnapshotListener { [weak self] querySnapshot, error in
                 
                 guard let self = self else { return }
@@ -99,10 +100,13 @@ struct MainMessageView: View {
                     vm.fetchRecentMessages()
                 }
             })
-            .navigationDestination(item: $vm.selectedRecipient, destination: { user in
-                Text(user.email ?? "")
+            .navigationDestination(for: DBUser.self, destination: { user in
                 ChatLogView(recipient: user)
             })
+            .navigationDestination(item: $vm.selectedRecipient, destination: { user in
+                ChatLogView(recipient: user)
+            })
+            
             .overlay(newMessageButton,alignment: .bottom)
             .toolbar(.hidden)
         }
@@ -180,10 +184,8 @@ extension MainMessageView{
         ForEach(vm.recentMessages) { recentMessage in
             
             VStack{
-                
-                NavigationLink {
-                    Text("d")
-                } label: {
+                NavigationLink(value: DBUser(recentMessage: recentMessage, currentUser: vm.chatUser ?? DBUser(userId:""))) {
+                    
                     HStack(spacing: 10){
                         WebImage(url: URL(string: recentMessage.recipientProfileUrl)) { image in
                             image
@@ -222,6 +224,7 @@ extension MainMessageView{
                             .font(.system(size: 14,weight: .semibold))
                     }
                 }
+                
                 .foregroundStyle(Color(.label))
                 Divider()
                     .padding(.vertical,8)

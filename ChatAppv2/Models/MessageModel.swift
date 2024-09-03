@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import FirebaseFirestore
+
 
 struct FirebaseConstants{
     static let fromId = "from_id"
@@ -26,7 +26,7 @@ struct MessageModel:Identifiable, Codable,Hashable{
     var id :String = UUID().uuidString
     let documentId :String
     let fromId,toId,text: String
-    let dateCreated : Timestamp
+    let dateCreated : Date
     let recipientProfileUrl: String
     let recipientEmail:String
     let senderEmail:String
@@ -38,7 +38,7 @@ struct MessageModel:Identifiable, Codable,Hashable{
         fromId:String,
         toId:String,
         text:String,
-        dateCreated:Timestamp,
+        dateCreated:Date,
         recipientProfileUrl:String,
         recipientEmail:String,
         senderEmail:String,
@@ -61,7 +61,7 @@ struct MessageModel:Identifiable, Codable,Hashable{
         self.fromId = data[FirebaseConstants.fromId] as? String ?? ""
         self.toId = data[FirebaseConstants.toId] as? String ?? ""
         self.text = data[FirebaseConstants.text] as? String ?? ""
-        self.dateCreated = data[FirebaseConstants.dateCreated] as? Timestamp ?? Timestamp()
+        self.dateCreated = data[FirebaseConstants.dateCreated] as? Date ?? Date()
         self.recipientProfileUrl = data[FirebaseConstants.recipientProfileUrl] as? String ?? ""
         self.recipientEmail = data[FirebaseConstants.recipientEmail] as? String ?? ""
         self.senderEmail = data[FirebaseConstants.senderEmail] as? String ?? ""
@@ -88,7 +88,7 @@ struct MessageModel:Identifiable, Codable,Hashable{
         self.fromId = try container.decode(String.self, forKey: .fromId)
         self.toId = try container.decode(String.self, forKey: .toId)
         self.text = try container.decode(String.self, forKey: .text)
-        self.dateCreated = try container.decode(Timestamp.self, forKey: .dateCreated)
+        self.dateCreated = try container.decode(Date.self, forKey: .dateCreated)
         self.recipientProfileUrl = try container.decode(String.self, forKey: .recipientProfileUrl)
         self.recipientEmail = try container.decode(String.self, forKey: .recipientEmail)
         self.senderEmail = try container.decode(String.self, forKey: .senderEmail)

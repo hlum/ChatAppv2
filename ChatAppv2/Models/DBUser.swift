@@ -7,6 +7,7 @@
 
 import Foundation
 
+
 struct DBUser:Identifiable, Codable , Hashable {
     let id: String = UUID().uuidString
     let userId : String
@@ -15,6 +16,30 @@ struct DBUser:Identifiable, Codable , Hashable {
     let dateCreated : Date?
     
     
+    init(recentMessage:MessageModel,currentUser:DBUser){
+        self.userId = {
+            if recentMessage.fromId == currentUser.userId{
+                return recentMessage.toId
+            }else{
+                return recentMessage.fromId
+            }
+        }()
+        self.email = {
+            if recentMessage.senderEmail == currentUser.email{
+                return recentMessage.recipientEmail
+            }else{
+                return recentMessage.senderEmail
+            }
+        }()
+        self.photoUrl = {
+            if recentMessage.senderProfileUrl == currentUser.photoUrl{
+                return recentMessage.recipientProfileUrl
+            }else{
+                return recentMessage.senderProfileUrl
+            }
+        }()
+        self.dateCreated = recentMessage.dateCreated
+    }
     
     init(data:[String:Any]){
         self.userId = data[CodingKeys.userId.rawValue] as? String ?? ""
