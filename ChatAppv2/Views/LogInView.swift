@@ -65,6 +65,7 @@ final class LogInViewModel:ObservableObject {
         let photoUrl = try? await UserManager.shared.saveImageInStorage(image: imageData, userId: authDataResult.uid)
         let user = DBUser(authDataResult: authDataResult,photoUrl: photoUrl)
         await UserManager.shared.storeNewUser(user: user)
+        
         DispatchQueue.main.async {
             self.loginStatusMessage = "Account Created Successfully"
         }
@@ -190,7 +191,7 @@ extension LogInView{
         }
     }
     private func checkTheUserIsLoggedIn(){
-        isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
+        self.isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
     }
     private var TabBarView:some View{
         Picker(selection: $vm.isLoginMode) {
