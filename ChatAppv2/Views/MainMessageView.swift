@@ -26,10 +26,7 @@ class MainViewMessageViewModel:ObservableObject{
             
             DispatchQueue.main.async{
                 self.chatUser = user
-                print("MainMessageViewModel:Added chat user")
             }
-            print("MainViewMessageViewModel:Successfully fetched user data")
-        
     }
     
     func logOut(){
@@ -70,7 +67,6 @@ class MainViewMessageViewModel:ObservableObject{
                         }
                         let messageData = change.document.data()
                         let recentMessage = MessageModel(documentId: docId, data: messageData)
-                        dump(recentMessage)
                         self.recentMessages.insert(recentMessage, at: 0)
                     }
                     
@@ -136,7 +132,7 @@ extension MainMessageView{
             }
 
             VStack(alignment:.leading,spacing: 4){
-                let email = vm.chatUser?.email ?? "can't find userEmail"
+                let email = vm.chatUser?.email ?? "No email found"
                 Text(email.replacingOccurrences(of: "@gmail.com", with: "さん"))
                     .font(.system(size: 24,weight:.bold))
                 
@@ -181,11 +177,12 @@ extension MainMessageView{
     }
     
     
-    
+   // MARKS : messagesView
     private var messagesView:some View{
         ForEach(vm.recentMessages) { recentMessage in
             
             VStack{
+
                 NavigationLink(value: DBUser(recentMessage: recentMessage, currentUser: vm.chatUser ?? DBUser(userId:""))) {
                     
                     HStack(spacing: 10){
@@ -209,8 +206,8 @@ extension MainMessageView{
                         }
                         
                         VStack(alignment:.leading){
-                            if recentMessage.senderEmail == vm.chatUser?.email ?? ""{
-                                Text(recentMessage.senderEmail)
+                            if recentMessage.senderEmail == vm.chatUser?.email ?? "No email"{
+                                Text(recentMessage.recipientEmail.replacingOccurrences(of: "@gmail.com", with: "さん"))
                                     .font(.system(size: 16,weight: .bold))
                             }else{
                                 Text(recentMessage.recipientEmail)

@@ -18,10 +18,10 @@ struct DBUser:Identifiable, Codable , Hashable {
     
     init(recentMessage:MessageModel,currentUser:DBUser){
         self.userId = {
-            if recentMessage.fromId == currentUser.userId{
-                return recentMessage.toId
-            }else{
+            if recentMessage.toId == currentUser.userId{
                 return recentMessage.fromId
+            }else{
+                return recentMessage.toId
             }
         }()
         self.email = {

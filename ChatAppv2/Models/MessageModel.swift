@@ -15,7 +15,7 @@ struct FirebaseConstants{
     static let dateCreated = "date_created"
     static let profileImageUrl = "photo_url"
     static let recipientProfileUrl = "recipient_profile_url"
-    static let senderEmail = "email"
+    static let senderEmail = "sender_email"
     static let recipientEmail = "recipient_email"
     static let senderProfileUrl = "sender_profile_url"
     static let documentId = "document_id"

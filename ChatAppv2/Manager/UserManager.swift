@@ -117,11 +117,9 @@ final class UserManager{
         do {
             try documentForRecipient.setData(from: message,encoder: encoder)
         } catch {
-            print("Error storing message: \(error.localizedDescription)")
+            print("UserManager:Error storing message: \(error.localizedDescription)")
         }
         await storeRecentMessages(message: message)
-        print("Message stored")
-
     }
     
     
@@ -159,7 +157,7 @@ final class UserManager{
         do {
             try documentForRecipient.setData(from: dataForRecipient,encoder: encoder)
         } catch{
-            print("Error storing message: \(error.localizedDescription)")
+            print("UserManager/getMessages:Error storing message: \(error.localizedDescription)")
         }
 
     }
@@ -177,8 +175,7 @@ final class UserManager{
             print("UserManager/getMessages:No toId provided")
             return
         }
-        
-        print("Uid and toId provided")
+    
         messagesCollection
             .document(fromId)
             .collection(toId)
@@ -189,48 +186,15 @@ final class UserManager{
                     return
                 }
                 
-                print("No error fetching messages")
                 snapshots?.documentChanges.forEach({ change in
                     if change.type == .added {
-                        print("document added")
                         let data = change.document.data()
                         let chatMessage = MessageModel(documentId: change.document.documentID, data: data)
-                        dump(chatMessage)
                         completion(chatMessage) // Pass one message at a time
-                        print("New message fetched: \(chatMessage.text)")
                     }
                 })
             }
     }
-
-
- 
-//    func fetchRecentMessages(for userId: String) async throws -> [RecentMessage] {
-//        let db = Firestore.firestore()
-//        let userChatsRef = db.collection("messages").document(userId)
-//        var recentMessages: [RecentMessage] = []
-//
-//        // Get all subcollections
-//        let collections = try await userChatsRef.getCollections()
-//
-//        for collection in collections {
-//            let query = collection.order(by: "timestamp", descending: true).limit(to: 1)
-//            let snapshot = try await query.getDocuments()
-//            
-//            if let document = snapshot.documents.first,
-//               let message = try? document.data(as: MessageModel.self, decoder: decoder) {
-//                let recentMessage = RecentMessage(
-//                    userId: collection.path.components(separatedBy: "/").last ?? "",
-//                    lastMessage: message.text,
-//                    timestamp: message.timestamp
-//                )
-//                recentMessages.append(recentMessage)
-//            }
-//        }
-//        
-//        // Sort recent messages by timestamp
-//        recentMessages.sort { $0.timestamp > $1.timestamp }
-//        
-//        return recentMessages
-//    }
 }
+
+

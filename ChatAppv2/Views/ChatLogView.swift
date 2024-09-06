@@ -38,7 +38,6 @@ class ChatLogViewModel:ObservableObject{
     
                 let user = try? await UserManager.shared.getUser(userId: userId)
                 DispatchQueue.main.async{
-                    print("ChatLogView/fetchCurrentDBUser:Successfully fetched current user data")
                     self.currentUserDB = user
                     completion(user)
                 }
@@ -89,7 +88,6 @@ class ChatLogViewModel:ObservableObject{
         UserManager.shared.getMessages(fromId: fromId, toId: recipient?.userId) { [weak self] message in
             DispatchQueue.main.async {
                 self?.chatMessages.append(message)
-                print("Appended new message: \(message.text)")
             }
         }
     }
