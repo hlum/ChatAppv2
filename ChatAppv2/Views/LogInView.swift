@@ -7,6 +7,7 @@
 
 import SwiftUI
 import PhotosUI
+import GoogleSignInSwift
 
 
 //import Firebase
@@ -98,6 +99,29 @@ final class LogInViewModel: ObservableObject {
                 self.loginStatusMessage = "Error: \(error.localizedDescription)"
             }
         }
+    }
+}
+
+
+//SignIn with Google
+extension LogInViewModel{
+    func signInWithGoogle()async throws{
+        let helper = SignInGoogleHelper()
+        let tokens = try await helper.signIn()
+        let authDataResult = try await AuthenticationManager.shared.signInWithGoogle(tokens: tokens)
+        
+        guard let _ = self.imageSelection else {
+            DispatchQueue.main.async {
+                self.loginStatusMessage = "Please select an image"
+            }
+            return
+        }
+        guard let profileImage = profileImage else {
+            return
+        }
+        let photoUrl = try await UserManager.shared.saveImageInStorage(image: profileImage, userId: authDataResult.uid)
+        let user = DBUser(authDataResult: authDataResult, photoUrl: photoUrl)
+        await UserManager.shared.storeNewUser(user: user)
     }
 }
 
@@ -212,6 +236,20 @@ extension LogInView{
                     .cornerRadius(10)
             }
             
+            Button {
+                Task{
+                    try await vm.signInWithGoogle()
+                    checkTheUserIsLoggedIn()
+                }
+            } label: {
+                Text("Sign In with Google")
+                    .font(.headline)
+                    .foregroundStyle(Color(.white))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 55)
+                    .background(Color(.blue))
+                    .cornerRadius(10)
+            }
         }
     }
     private func checkTheUserIsLoggedIn(){

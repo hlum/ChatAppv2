@@ -2,8 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>&lt;key&gt;NSPhotoLibraryUsageDescription&lt;/key&gt;
-This app requires access to your photo library to allow you to select profile pictures and share images in chats.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>Google SignIn</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.509311638641-6amk5gcev9hi0u7fm2epp59i0cbopcs0</string>
+			</array>
+		</dict>
+	</array>
+	<key>GIDClientID</key>
+	<string>509311638641-6amk5gcev9hi0u7fm2epp59i0cbopcs0.apps.googleusercontent.com</string>
 </dict>
 </plist>
