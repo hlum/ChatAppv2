@@ -9,7 +9,6 @@ import Foundation
 import Firebase
 import FirebaseAuth
 
-
 final class AuthenticationManager: ObservableObject{
     @Published var currentUser : AuthDataResultModel? = nil
     static let shared = AuthenticationManager()
@@ -73,4 +72,23 @@ extension AuthenticationManager{
         try await Auth.auth().sendPasswordReset(withEmail: email)
     }
     
+}
+
+
+// MARKS : Google SignIn
+extension AuthenticationManager{
+    func signInWithGoogle(tokens: GoogleSignInResultModel) async throws -> AuthDataResultModel{
+        let credential = GoogleAuthProvider.credential(withIDToken: tokens.idToken, accessToken: tokens.acessToken)
+        return try await signInWithCredentials(credential: credential)
+    }
+    
+    func signInWithCredentials(credential:AuthCredential)async throws -> AuthDataResultModel{
+        do {
+            let authDataResult = try await Auth.auth().signIn(with: credential)
+            return AuthDataResultModel(user: authDataResult.user)
+        } catch {
+            print("Error signing in with Google: \(error.localizedDescription)")
+            throw error
+        }
+    }
 }

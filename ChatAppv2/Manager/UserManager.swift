@@ -10,6 +10,13 @@ import Firebase
 import FirebaseFirestore
 import FirebaseStorage
 
+struct GoogleSignInResultModel{
+    let idToken: String
+    let acessToken : String
+    let name : String?
+    let email : String?
+}
+
 
 final class UserManager{
     static let shared = UserManager()
@@ -67,7 +74,7 @@ final class UserManager{
         do{
             try userDocuments(userId: user.userId).setData(from: user,encoder: encoder)
         }catch{
-            print(error.localizedDescription)
+            print("error encountered while storing user:\(error.localizedDescription)")
         }
     }
     
