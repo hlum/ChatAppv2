@@ -26,40 +26,8 @@ class CreateNewMessageViewModel: ObservableObject{
         }
     }
 }
-//class CreateNewMessageViewModel: ObservableObject{
-//    @Published var users: [ChatUser] = []
-//    @Published var errorMessage = ""
-//    
-//    init(){
-//        fetchAllUsers()
-//    }
-//    
-//    private func fetchAllUsers(){
-//        DispatchQueue.global(qos:.background).async {
-//            Firestore.firestore().collection("users").getDocuments { documentSnapshots, error
-//                in
-//                if let error = error {
-//                    DispatchQueue.main.async {
-//                        self.errorMessage = "Failed to fetch users: \(error)"
-//                    }
-//                    print("Failed to fetch users: \(error)")
-//                    return
-//                }
-//                documentSnapshots?.documents.forEach({ snapshot in
-//                    let data = snapshot.data()
-//                    let user = ChatUser(data: data)
-//                    if user.uid != Auth.auth().currentUser?.uid{
-//                        DispatchQueue.main.async {
-//                            self.users.append(user)
-//                        }
-//                    }
-//
-//                })
-//            }
-//        }
-//        
-//    }
-//}
+
+
 
 struct CreateNewMessageView: View {
     @ObservedObject var vm = CreateNewMessageViewModel()
@@ -72,35 +40,36 @@ struct CreateNewMessageView: View {
             ScrollView {
                 Text(vm.errorMessage)
                 ForEach(vm.users){user in
-                    Button {
-                        dismiss()
-                        selectedNewUser(user)
-                    } label: {
-                        HStack(spacing: 16){
-                            AsyncImage(url: URL(string:user.photoUrl ?? "")) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width:50,height: 50)
-                                    .clipped()
-                                    .cornerRadius(50)
-                                    .overlay(RoundedRectangle(cornerRadius: 44)
-                                        .stroke(Color(.label),lineWidth: 1)
-                                    )
-                                    .shadow(radius: 5)
+                        Button {
+                            dismiss()
+                            selectedNewUser(user)
+                        } label: {
+                            HStack(spacing: 16){
+                                AsyncImage(url: URL(string:user.photoUrl ?? "")) { image in
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width:50,height: 50)
+                                        .clipped()
+                                        .cornerRadius(50)
+                                        .overlay(RoundedRectangle(cornerRadius: 44)
+                                            .stroke(Color(.label),lineWidth: 1)
+                                        )
+                                        .shadow(radius: 5)
 
-                            } placeholder: {
-                                ProgressView()
-                                    .frame(width:50,height: 50)
+                                } placeholder: {
+                                    ProgressView()
+                                        .frame(width:50,height: 50)
+                                }
+                                
+                                Text(user.email ?? "")
+                                
+                                Spacer()
                             }
-                            
-                            Text(user.email ?? "")
-                            
-                            Spacer()
-                        }
-                        .padding(.horizontal)
+                            .padding(.horizontal)
 
-                    }
+                        }
+                    
 
                                        
                     Divider()

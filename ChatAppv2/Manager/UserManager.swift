@@ -80,6 +80,7 @@ final class UserManager{
     
     func getUser(userId:String) async throws-> DBUser{
         do{
+            print(userId)
             let result = try await  userDocuments(userId: userId).getDocument(as: DBUser.self)
             return result
         }catch{
@@ -95,7 +96,9 @@ final class UserManager{
             snapshot.documents.forEach { documentSnapshot in
                 let data = documentSnapshot.data()
                 let user = DBUser(data: data)
-                users.append(user)
+                if user.userId != AuthenticationManager.shared.currentUser?.uid{
+                    users.append(user)
+                }
             }
         }catch{
             print("UserManger: Error getting all users\(error.localizedDescription)")
@@ -158,10 +161,13 @@ final class UserManager{
             recipientProfileUrl: message.senderProfileUrl,//change later
             recipientEmail: message.senderEmail,
             senderEmail: message.recipientEmail,
-            senderProfileUrl: message.recipientProfileUrl
+            senderProfileUrl: message.recipientProfileUrl,
+            senderName: message.recieverName,
+            recieverName : message.recieverName
         )
         
         do {
+            
             try documentForRecipient.setData(from: dataForRecipient,encoder: encoder)
         } catch{
             print("UserManager/getMessages:Error storing message: \(error.localizedDescription)")
@@ -202,6 +208,20 @@ final class UserManager{
                 })
             }
     }
+    
+    func checkIfUserExistInDatabase(userId:String)async throws ->Bool{
+        let snapshot = try await Firestore.firestore().collection("users").document(userId).getDocument()
+        return snapshot.exists
+    }
+    
+    func addUserPreference(userId:String,preference:[String])async throws{
+        let data:[String:Any] = [
+            DBUser.CodingKeys.preferences.rawValue: FieldValue.arrayUnion(preference)
+        ]
+        
+        try await userDocuments(userId: userId).updateData(data)
+    }
+    
 }
 
 

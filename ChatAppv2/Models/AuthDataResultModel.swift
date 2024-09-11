@@ -8,7 +8,7 @@
 import Foundation
 import FirebaseAuth
 
-struct AuthDataResultModel{
+struct AuthDataResultModel:Hashable{
     let uid : String
     let email : String?
     let photoURL : String?
@@ -17,5 +17,10 @@ struct AuthDataResultModel{
         self.email = user.email
         self.uid = user.uid
         self.photoURL = user.photoURL?.absoluteString
+    }
+    init(uid:String,email:String,photoUrl:String){
+        self.uid = uid
+        self.email = email
+        self.photoURL = photoUrl
     }
 }

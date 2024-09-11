@@ -17,6 +17,7 @@ class MainViewMessageViewModel:ObservableObject{
         }
     
     func fetchUserData()async {
+        print("Fetching user")
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser()else {
             print("MainViewMessageViewModel:Can't fetch user data")
             return
@@ -112,6 +113,8 @@ struct MainMessageView: View {
 //MARKS: View extensions
 
 extension MainMessageView{
+    
+    
     private var customNavBar:some View{
         HStack{
             WebImage(url: URL(string: vm.chatUser?.photoUrl ?? "NO Image url found")) { image in
@@ -132,8 +135,8 @@ extension MainMessageView{
             }
 
             VStack(alignment:.leading,spacing: 4){
-                let email = vm.chatUser?.email ?? "No email found"
-                Text(email.replacingOccurrences(of: "@gmail.com", with: "さん"))
+                let name = vm.chatUser?.name ?? "Can't get name"
+                Text(name)
                     .font(.system(size: 24,weight:.bold))
                 
                 HStack{
@@ -172,7 +175,7 @@ extension MainMessageView{
                 vm.fetchRecentMessages()
             }
         })  {
-            LogInView(isUserCurrentlyLoggedOut:$vm.isUserCurrentlyLoggedOut)
+            OnboardingView(isUserCurrentlyLoggedOut:$vm.isUserCurrentlyLoggedOut)
         }
     }
     
@@ -206,11 +209,11 @@ extension MainMessageView{
                         }
                         
                         VStack(alignment:.leading){
-                            if recentMessage.senderEmail == vm.chatUser?.email ?? "No email"{
-                                Text(recentMessage.recipientEmail.replacingOccurrences(of: "@gmail.com", with: "さん"))
+                            if recentMessage.senderName == vm.chatUser?.name ?? "No email"{
+                                Text(recentMessage.recieverName)
                                     .font(.system(size: 16,weight: .bold))
                             }else{
-                                Text(recentMessage.recipientEmail)
+                                Text(recentMessage.recieverName)
                                     .font(.system(size: 16,weight: .bold))
                             }
                             

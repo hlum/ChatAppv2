@@ -22,6 +22,7 @@ final class LogInViewModel: ObservableObject {
     @Published var password = ""
     @Published var imageSelection: PhotosPickerItem? = nil
     @Published var profileImage: UIImage?
+    @Published var logineduser:AuthDataResultModel? = nil
     
     
     func loadTransferableImage() {
@@ -42,7 +43,10 @@ final class LogInViewModel: ObservableObject {
             }
         }
     }
-    
+}
+
+//SignIn with email
+extension LogInViewModel{
     func handleAction()async{
         if self.isLoginMode {
             await self.signInUser()
@@ -72,7 +76,7 @@ final class LogInViewModel: ObservableObject {
                 return
             }
             let photoUrl = try? await UserManager.shared.saveImageInStorage(image: profileImage, userId: authDataResult.uid)
-            let user = DBUser(authDataResult: authDataResult,photoUrl: photoUrl)
+            let user = DBUser(authDataResult: authDataResult,photoUrl: photoUrl,preferences: [],name:"",age: 1)
             await UserManager.shared.storeNewUser(user: user)
             
             DispatchQueue.main.async {
@@ -104,24 +108,21 @@ final class LogInViewModel: ObservableObject {
 
 
 //SignIn with Google
-extension LogInViewModel{
-    func signInWithGoogle()async throws{
+extension LogInViewModel {
+    func signInWithGoogle() async throws {
         let helper = SignInGoogleHelper()
         let tokens = try await helper.signIn()
         let authDataResult = try await AuthenticationManager.shared.signInWithGoogle(tokens: tokens)
         
-        guard let _ = self.imageSelection else {
+        // Check if the user is new
+        let isNewUser = !(try await UserManager.shared.checkIfUserExistInDatabase(userId: authDataResult.uid))
+        
+        if isNewUser {
             DispatchQueue.main.async {
-                self.loginStatusMessage = "Please select an image"
+                self.logineduser = authDataResult
             }
-            return
+            
         }
-        guard let profileImage = profileImage else {
-            return
-        }
-        let photoUrl = try await UserManager.shared.saveImageInStorage(image: profileImage, userId: authDataResult.uid)
-        let user = DBUser(authDataResult: authDataResult, photoUrl: photoUrl)
-        await UserManager.shared.storeNewUser(user: user)
     }
 }
 
@@ -153,6 +154,9 @@ struct LogInView: View {
                     }
                     .padding()
                 }
+                .navigationDestination(item: $vm.logineduser, destination: { user in
+                    NewUserFormView(isUserCurrentlyLoggedOut: $isUserCurrentlyLoggedOut, user: user)
+                })
                 .navigationTitle(vm.isLoginMode ? "Login" : "Create Account")
                 .background(Color(.init(white:0,alpha:0.05))
                     .ignoresSafeArea())
@@ -223,7 +227,7 @@ extension LogInView{
             Button {
                 Task{
                     await vm.handleAction()
-                    checkTheUserIsLoggedIn()
+                    self.isUserCurrentlyLoggedOut = false
                 }
                 
             } label: {
@@ -235,11 +239,9 @@ extension LogInView{
                     .background(.blue)
                     .cornerRadius(10)
             }
-            
             Button {
                 Task{
                     try await vm.signInWithGoogle()
-                    checkTheUserIsLoggedIn()
                 }
             } label: {
                 Text("Sign In with Google")
@@ -252,9 +254,11 @@ extension LogInView{
             }
         }
     }
-    private func checkTheUserIsLoggedIn(){
+    
+    private func toggleIsUserCurrentlyLoggedOut(){
         self.isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
     }
+    
     private var TabBarView:some View{
         Picker(selection: $vm.isLoginMode) {
             Text("Login")
@@ -268,6 +272,31 @@ extension LogInView{
     }
 }
 
-#Preview {
-    LogInView(isUserCurrentlyLoggedOut: .constant(true))
+//#Preview {
+//    LogInView(isUserCurrentlyLoggedOut: .constant(true))
+//}
+
+
+
+
+struct NewUserFormView:View {
+    @Binding var isUserCurrentlyLoggedOut: Bool
+    let user: AuthDataResultModel
+    var body: some View {
+        Text(user.email ?? "No email")
+        Button("Close the form view"){
+            isUserCurrentlyLoggedOut = false
+        }
+    }
+}
+
+#Preview{
+    NewUserFormView(
+        isUserCurrentlyLoggedOut: .constant(true),
+        user:AuthDataResultModel(
+            uid: "UIddsafdsfsd",
+            email: "hlumaungphyo@gmail.com",
+            photoUrl: "httpasfasf"
+        )
+    )
 }

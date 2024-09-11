@@ -19,6 +19,8 @@ struct FirebaseConstants{
     static let recipientEmail = "recipient_email"
     static let senderProfileUrl = "sender_profile_url"
     static let documentId = "document_id"
+    static let senderName = "sender_name"
+    static let recieverName = "reciever_name"
 }
 
 
@@ -31,6 +33,8 @@ struct MessageModel:Identifiable, Codable,Hashable{
     let recipientEmail:String
     let senderEmail:String
     let senderProfileUrl:String
+    let senderName:String
+    let recieverName:String
     
     init(
         id:String,
@@ -42,7 +46,9 @@ struct MessageModel:Identifiable, Codable,Hashable{
         recipientProfileUrl:String,
         recipientEmail:String,
         senderEmail:String,
-        senderProfileUrl:String
+        senderProfileUrl:String,
+        senderName:String,
+        recieverName : String
     ){
         self.id = id
         self.documentId = documentId
@@ -54,6 +60,8 @@ struct MessageModel:Identifiable, Codable,Hashable{
         self.recipientProfileUrl = recipientProfileUrl
         self.senderEmail = senderEmail
         self.senderProfileUrl = senderProfileUrl
+        self.senderName = senderName
+        self.recieverName = recieverName
     }
     
     init(documentId:String,data:[String:Any]) {
@@ -66,6 +74,8 @@ struct MessageModel:Identifiable, Codable,Hashable{
         self.recipientEmail = data[FirebaseConstants.recipientEmail] as? String ?? ""
         self.senderEmail = data[FirebaseConstants.senderEmail] as? String ?? ""
         self.senderProfileUrl = data[FirebaseConstants.senderProfileUrl] as? String ?? ""
+        self.senderName = data[FirebaseConstants.senderName] as? String ?? ""
+        self.recieverName = data[FirebaseConstants.recieverName] as? String ?? ""
     }
     
     enum CodingKeys:String, CodingKey {
@@ -79,6 +89,8 @@ struct MessageModel:Identifiable, Codable,Hashable{
         case recipientEmail = "recipient_email"
         case senderEmail = "sender_email"
         case senderProfileUrl = "sender_profile_url"
+        case senderName = "sender_name"
+        case recieverName = "reciever_name"
     }
     
     init(from decoder: any Decoder) throws {
@@ -93,6 +105,8 @@ struct MessageModel:Identifiable, Codable,Hashable{
         self.recipientEmail = try container.decode(String.self, forKey: .recipientEmail)
         self.senderEmail = try container.decode(String.self, forKey: .senderEmail)
         self.senderProfileUrl = try container.decode(String.self, forKey: .senderProfileUrl)
+        self.senderName = try container.decode(String.self, forKey: .senderName)
+        self.recieverName = try container.decode(String.self, forKey: .recieverName)
     }
     
     func encode(to encoder: any Encoder) throws {
@@ -107,6 +121,8 @@ struct MessageModel:Identifiable, Codable,Hashable{
         try container.encode(self.recipientEmail, forKey: .recipientEmail)
         try container.encode(self.senderEmail, forKey: .senderEmail)
         try container.encode(self.senderProfileUrl, forKey: .senderProfileUrl)
+        try container.encode(self.senderName, forKey: .senderName)
+        try container.encode(self.recieverName, forKey: .recieverName)
     }
 
 }

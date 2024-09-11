@@ -68,7 +68,9 @@ class ChatLogViewModel:ObservableObject{
             FirebaseConstants.recipientProfileUrl:recipient?.photoUrl ?? "",
             FirebaseConstants.recipientEmail : recipient?.email ?? "",
             FirebaseConstants.senderEmail : currentUserDB?.email ?? "",
-            FirebaseConstants.senderProfileUrl:currentUserDB?.photoUrl ?? "Chat log : No image url"
+            FirebaseConstants.senderProfileUrl:currentUserDB?.photoUrl ?? "Chat log : No image url",
+            FirebaseConstants.senderName : currentUserDB?.name ?? "Can't get sendername messageLogView/sendmessage",
+            FirebaseConstants.recieverName:recipient?.name ?? "Can't get recievername messageLogView/sendmessage"
         ] as [String : Any]
         
         let message = MessageModel(documentId: "", data: messageData)
@@ -169,35 +171,38 @@ struct MessageBubbleView :View {
     let chatMessage:MessageModel
     var body: some View {
         VStack{
-            if chatMessage.fromId == AuthenticationManager.shared.currentUser?.uid{
-                HStack{
-                    Spacer()
+            if let currentUser = AuthenticationManager.shared.currentUser {
+                if chatMessage.fromId == currentUser.uid{
                     HStack{
-                        Text(chatMessage.text)
-                            .foregroundStyle(Color(.white))
+                        Spacer()
+                        HStack{
+                            Text(chatMessage.text)
+                                .foregroundStyle(Color(.white))
+                        }
+                        .padding()
+                        .background(.blue)
+                        .cornerRadius(10)
+                        .padding(.bottom,1)
+                        
                     }
-                    .padding()
-                    .background(.blue)
-                    .cornerRadius(10)
-                    .padding(.bottom,1)
-
-                }
-                .padding(.horizontal)
-            }else{
-                HStack{
+                    .padding(.horizontal)
+                }else{
                     HStack{
-                        Text(chatMessage.text)
-                            .foregroundStyle(Color(.black))
+                        HStack{
+                            Text(chatMessage.text)
+                                .foregroundStyle(Color(.black))
+                        }
+                        .padding()
+                        .background(.white)
+                        .cornerRadius(10)
+                        .padding(.bottom,1)
+                        
+                        Spacer()
                     }
-                    .padding()
-                    .background(.white)
-                    .cornerRadius(10)
-                    .padding(.bottom,1)
-
-                    Spacer()
+                    .padding(.horizontal)
+                    
                 }
-                .padding(.horizontal)
-
+                
             }
         }
     }
