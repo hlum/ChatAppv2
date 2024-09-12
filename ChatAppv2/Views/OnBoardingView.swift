@@ -10,11 +10,13 @@ final class OnboardingViewModel: ObservableObject {
     @Published var profileImage:UIImage? = nil
     
     
+    
     @Published var alertTitle: String = ""
     @Published var showAlert: Bool = false
     
-    
     @Published var showFields:Bool = false
+    @Published var isLoading:Bool = false
+    @Published var progress:Double = 0.0
     
     func showAlertTitle(title: String) {
         self.alertTitle = title
@@ -24,44 +26,104 @@ final class OnboardingViewModel: ObservableObject {
 
 //SignIn with google
 extension OnboardingViewModel{
+    
+    
     func signInWithGoogle() async throws {
-        let helper = SignInGoogleHelper()
-        let tokens = try await helper.signIn()
-        let authDataResult = try await AuthenticationManager.shared.signInWithGoogle(tokens: tokens)
-        
-        // Check if the user is new
-        let isNewUser = !(try await UserManager.shared.checkIfUserExistInDatabase(userId: authDataResult.uid))
-        
         await MainActor.run {
-            if isNewUser {
-                self.showFields = true
-            }else{
-                self.showFields = false
+            isLoading = true
+            progress = 0.0
+        }
+        
+        defer {
+            Task { @MainActor in
+                isLoading = false
+                progress = 1.0
             }
+        }
+        
+        do {
+            let helper = SignInGoogleHelper()
+            await updateProgress(0.2)
+            
+            let tokens = try await helper.signIn()
+            await updateProgress(0.4)
+            
+            let authDataResult = try await AuthenticationManager.shared.signInWithGoogle(tokens: tokens)
+            await updateProgress(0.6)
+            
+            // Check if the user is new
+            let isNewUser = !(try await UserManager.shared.checkIfUserExistInDatabase(userId: authDataResult.uid))
+            await updateProgress(0.8)
+            
+            await MainActor.run {
+                if isNewUser {
+                    self.showFields = true
+                } else {
+                    self.showFields = false
+                }
+            }
+            
+            await updateProgress(1.0)
+        } catch {
+            await MainActor.run {
+                // Handle error, maybe show an alert
+                self.alertTitle = "サインインに失敗しました"
+                self.showAlert = true
+            }
+            throw error
         }
     }
     
-    func saveUserInputs()async {
-        guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser() else{
+    func saveUserInputs() async {
+        await MainActor.run {
+            isLoading = true
+            progress = 0.0
+        }
+        
+        defer {
+            Task { @MainActor in
+                isLoading = false
+                progress = 1.0
+            }
+        }
+        
+        guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser() else {
             print("OnBoardingView/saveUserInput:Can't get authdatResult")
             return
         }
-        //save profile image in the Firestore
-        guard let profileImage = self.profileImage else{
+        
+        guard let profileImage = self.profileImage else {
             print("BoardingView/signInWithGoogle:NO photo")
             return
         }
-        let photoURL = try? await UserManager.shared.saveImageInStorage(image: profileImage, userId: authDataResult.uid)
         
-        //save new user in the database
-        let newUser = DBUser(
-            authDataResult: authDataResult,
-            photoUrl: photoURL,
-            preferences: preferences,
-            name: name ,
-            age:age
-        )
-        await UserManager.shared.storeNewUser(user: newUser)
+        do {
+            // Save image
+            await updateProgress(0.2)
+            let photoURL = try await UserManager.shared.saveImageInStorage(image: profileImage, userId: authDataResult.uid)
+            await updateProgress(0.6)
+            
+            let newUser = DBUser(
+                authDataResult: authDataResult,
+                photoUrl: photoURL,
+                preferences: preferences,
+                name: name,
+                age: age
+            )
+            
+            // Save user data
+            await updateProgress(0.8)
+            await UserManager.shared.storeNewUser(user: newUser)
+            await updateProgress(1.0)
+        } catch {
+            print("Error saving user data: \(error)")
+            // Handle the error appropriately
+        }
+    }
+    
+    @MainActor
+    private func updateProgress(_ newProgress: Double) {
+        progress = newProgress
     }
 }
 //load the Image func
@@ -100,41 +162,63 @@ struct OnboardingView: View {
         "言語学習", "ペットの世話"
     ]
     var body: some View {
-        ZStack {
-            Color.customBlack.ignoresSafeArea()
+            
             ZStack {
-                switch onboardingState {
-                case 0:
-                    welcomeSection
-                        .transition(transition)
-                case 1:
-                    addNameSection
-                        .transition(transition)
-                case 2:
-                    addAgeSection
-                        .transition(transition)
-                case 3:
-                    addGenderSection
-                        .transition(transition)
-                case 4:
-                    userInterestsSection
-                        .transition(transition)
-                default:
-                    RoundedRectangle(cornerRadius: 25.0)
-                        .foregroundColor(.green)
+                Color.customBlack.ignoresSafeArea()
+                ZStack {
+                    switch onboardingState {
+                    case 0:
+                        welcomeSection
+                            .transition(transition)
+                    case 1:
+                        addNameSection
+                            .transition(transition)
+                    case 2:
+                        addAgeSection
+                            .transition(transition)
+                    case 3:
+                        addGenderSection
+                            .transition(transition)
+                    case 4:
+                        userInterestsSection
+                            .transition(transition)
+                    default:
+                        RoundedRectangle(cornerRadius: 25.0)
+                            .foregroundColor(.green)
+                    }
                 }
+                VStack {
+                    Spacer()
+                    bottomButton
+                }
+                .padding(30)
+                
+                   if vm.isLoading {
+                       Color.black.opacity(0.5).ignoresSafeArea()
+                       VStack {
+                           ProgressView()
+                               .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                               .scaleEffect(2)
+                           
+                           ProgressView(value: vm.progress)
+                               .frame(width: 200)
+                               .tint(.white)
+                               .padding()
+                           
+                           Text("\(Int(vm.progress * 100))%")
+                               .foregroundColor(.white)
+                               .font(.headline)
+                       }
+                   }
             }
-            VStack {
-                Spacer()
-                bottomButton
+        
+            .alert(isPresented: $vm.showAlert) {
+                Alert(title: Text(vm.alertTitle))
+                
             }
-            .padding(30)
+
         }
-        .alert(isPresented: $vm.showAlert) {
-            Alert(title: Text(vm.alertTitle))
-        }
-    }
-}
+ }
 
 extension OnboardingView {
     private var bottomButton: some View {
@@ -339,47 +423,41 @@ struct InterestButton: View {
 }
 
 extension OnboardingView {
-    func handleNextButtonPressed() {
+    
+    private func handleNextButtonPressed() {
         switch onboardingState {
         case 0:
-            Task{
-                try await vm.signInWithGoogle()
-                if !vm.showFields{
-                    self.isUserCurrentlyLoggedOut = false
+            Task {
+                do {
+                    try await vm.signInWithGoogle()
+                    if vm.showFields {
+                        withAnimation(.spring()) {
+                            onboardingState += 1
+                        }
+                    }else{
+                        self.isUserCurrentlyLoggedOut = false
+                    }
+                } catch {
+                    print("Error signing in with Google: \(error)")
                 }
-            }
-        case 1:
-            guard vm.name.count >= 3 else {
-                vm.showAlertTitle(title: "名前は3文字以上である必要があります！")
-                return
-            }
-            guard vm.imageSelection != nil else {
-                vm.showAlertTitle(title: "プロフィール画像を選択してください！")
-                return
             }
         case 4:
             guard !vm.preferences.isEmpty else {
                 vm.showAlertTitle(title: "少なくとも1つの興味を選択してください！")
                 return
             }
-        default:
-            break
-        }
-        
-        if onboardingState == 4 {
-            Task{
+            
+            Task {
                 await vm.saveUserInputs()
-                self.isUserCurrentlyLoggedOut = false
+                await MainActor.run {
+                    self.isUserCurrentlyLoggedOut = false
+                }
             }
-        } else {
+        default:
             withAnimation(.spring()) {
                 onboardingState += 1
             }
         }
-    }
-    
-    func signIn() {
-        print("サインイン")
     }
 }
 
