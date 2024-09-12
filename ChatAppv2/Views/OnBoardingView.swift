@@ -441,6 +441,18 @@ extension OnboardingView {
                     print("Error signing in with Google: \(error)")
                 }
             }
+        case 1:
+            guard vm.name.count > 2 else{
+                vm.showAlertTitle(title: "名前は３文字以上入力してください！！")
+                return
+            }
+            guard vm.imageSelection != nil else{
+                vm.showAlertTitle(title: "プロフィール写真を選択してください！！")
+                return
+            }
+            withAnimation(.spring()) {
+                onboardingState += 1
+            }
         case 4:
             guard !vm.preferences.isEmpty else {
                 vm.showAlertTitle(title: "少なくとも1つの興味を選択してください！")

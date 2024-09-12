@@ -80,11 +80,10 @@ final class UserManager{
     
     func getUser(userId:String) async throws-> DBUser{
         do{
-            print(userId)
             let result = try await  userDocuments(userId: userId).getDocument(as: DBUser.self)
             return result
         }catch{
-            print(error.localizedDescription)
+            print("UserManager/getUser/error: \(error.localizedDescription)")
             throw error
         }
     }
@@ -163,7 +162,7 @@ final class UserManager{
             senderEmail: message.recipientEmail,
             senderProfileUrl: message.recipientProfileUrl,
             senderName: message.recieverName,
-            recieverName : message.recieverName
+            recieverName : message.senderName
         )
         
         do {
@@ -179,17 +178,8 @@ final class UserManager{
     
     // UserManager.swift
 
-    func getMessages(fromId: String?, toId: String?, completion: @escaping (MessageModel) -> Void) {
-        guard let fromId = fromId else {
-            print("UserManager/getMessages:No fromId provided")
-            return
-        }
-        guard let toId = toId else {
-            print("UserManager/getMessages:No toId provided")
-            return
-        }
-    
-        messagesCollection
+    func getMessages(fromId: String, toId: String, completion: @escaping (MessageModel) -> Void) -> ListenerRegistration {
+        return messagesCollection
             .document(fromId)
             .collection(toId)
             .order(by: FirebaseConstants.dateCreated)

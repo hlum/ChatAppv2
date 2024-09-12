@@ -9,7 +9,7 @@ import SwiftUI
 import Firebase
 import FirebaseAuth
 
-class CreateNewMessageViewModel: ObservableObject{
+final class CreateNewMessageViewModel: ObservableObject{
     @Published var users: [DBUser] = []
     @Published var errorMessage = ""
     

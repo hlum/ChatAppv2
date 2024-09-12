@@ -6,7 +6,7 @@
 //
 
 import Foundation
-
+import FirebaseCore
 
 struct DBUser:Identifiable, Codable , Hashable {
     var id: String = UUID().uuidString
@@ -14,7 +14,7 @@ struct DBUser:Identifiable, Codable , Hashable {
     let name :String?
     let email : String?
     let photoUrl : String?
-    let dateCreated : Date?
+    let dateCreated : Timestamp?
     let preferences:[String]?
     let age : Double?
     
@@ -58,7 +58,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.userId = data[CodingKeys.userId.rawValue] as? String ?? ""
         self.email = data[CodingKeys.email.rawValue] as? String ?? ""
         self.photoUrl = data[CodingKeys.photoUrl.rawValue] as? String ?? ""
-        self.dateCreated = data[CodingKeys.dateCreated.rawValue] as? Date ?? Date()
+        self.dateCreated = data[CodingKeys.dateCreated.rawValue] as? Timestamp ?? Timestamp(date: Date())
         self.preferences = data[CodingKeys.preferences.rawValue] as? [String] ?? []
         self.age = data[CodingKeys.age.rawValue] as? Double ?? 18
         self.name = data[CodingKeys.name.rawValue] as? String ?? ""
@@ -68,7 +68,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.userId = authDataResult.uid
         self.email = authDataResult.email
         self.photoUrl = photoUrl?.description
-        self.dateCreated = Date()
+        self.dateCreated = Timestamp(date: Date())
         self.preferences = preferences
         self.name = name
         self.age = age
@@ -79,7 +79,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.userId = authDataResult.uid
         self.email = authDataResult.email
         self.photoUrl = authDataResult.photoURL?.description
-        self.dateCreated = Date()
+        self.dateCreated = Timestamp(date: Date())
         self.preferences = nil
         self.name = nil
         self.age = nil
@@ -89,7 +89,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         userId:String,
         email:String? = nil,
         photoUrl:String? = nil,
-        dateCreated:Date? = nil,
+        dateCreated:Timestamp? = nil,
         preferences:[String]? = nil
     ){
         self.userId = userId
@@ -118,7 +118,7 @@ struct DBUser:Identifiable, Codable , Hashable {
          self.name = try container.decodeIfPresent(String.self, forKey: .name)
          self.email = try container.decodeIfPresent(String.self, forKey: .email)
          self.photoUrl = try container.decodeIfPresent(String.self, forKey: .photoUrl)
-         self.dateCreated = try container.decodeIfPresent(Date.self, forKey: .dateCreated)
+        self.dateCreated = try container.decodeIfPresent(Timestamp.self, forKey: .dateCreated)
          self.preferences = try container.decodeIfPresent([String].self, forKey: .preferences)
          self.age = try container.decodeIfPresent(Double.self, forKey: .age)
      }

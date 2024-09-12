@@ -7,6 +7,7 @@
 
 import SwiftUI
 import FirebaseCore
+import Firebase
 
 
 
@@ -17,6 +18,9 @@ class ChatLogViewModel:ObservableObject{
     @Published var chatMessages:[MessageModel] = []
     @Published var textFieldText:String = ""
     let recipient : DBUser?
+    private var messagesListener:ListenerRegistration?
+    
+    
     init(recipient: DBUser) {
         self.recipient = recipient
         fetchCurrentDBUser { user in
@@ -82,16 +86,29 @@ class ChatLogViewModel:ObservableObject{
     }
     
     func fetchMessages() {
-        guard let fromId = self.currentUserDB?.userId else{
-            print("ChatLogViewModel/fetchMessages : Can't get current user id")
+        guard let fromId = self.currentUserDB?.userId else {
+            print("ChatLogViewModel/fetchMessages: Can't get current user id")
             return
         }
         
-        UserManager.shared.getMessages(fromId: fromId, toId: recipient?.userId) { [weak self] message in
+        
+        guard let toId = self.recipient?.userId else {
+            print("ChatLogViewModel/fetchMessages: Can't get recipient user id")
+            return
+        }
+
+        messagesListener = UserManager.shared.getMessages(fromId: fromId, toId: toId) { [weak self] message in
             DispatchQueue.main.async {
                 self?.chatMessages.append(message)
             }
         }
+    }
+    func cancelListeners() {
+        messagesListener?.remove()
+    }
+
+    deinit {
+        cancelListeners()
     }
 }
 
@@ -111,6 +128,9 @@ struct ChatLogView:View {
                 
             ChatBottomBar
 
+        }
+        .onDisappear {
+            vm.cancelListeners()
         }
         .navigationTitle(vm.recipient?.email ?? "")
         .navigationBarTitleDisplayMode(.inline)

@@ -1,5 +1,6 @@
 
 import SwiftUI
+import Firebase
 import SDWebImageSwiftUI
 
 class MainViewMessageViewModel:ObservableObject{
@@ -10,6 +11,8 @@ class MainViewMessageViewModel:ObservableObject{
     @Published var selectedRecipient:DBUser? = nil
     @Published var recentMessages: [MessageModel] = []
     
+    private var messagesListener:ListenerRegistration?
+    
     
     
     init(){
@@ -17,7 +20,6 @@ class MainViewMessageViewModel:ObservableObject{
         }
     
     func fetchUserData()async {
-        print("Fetching user")
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser()else {
             print("MainViewMessageViewModel:Can't fetch user data")
             return
@@ -40,11 +42,10 @@ class MainViewMessageViewModel:ObservableObject{
     func fetchRecentMessages() {
         guard let userId = try? AuthenticationManager.shared.getAuthenticatedUser().uid
         else {
-            print("")
             return
         }
         
-        UserManager.shared.recentMessagesCollection
+        messagesListener = UserManager.shared.recentMessagesCollection
             .document(userId)
             .collection("messages")
             .order(by: FirebaseConstants.dateCreated, descending: false)
@@ -77,6 +78,27 @@ class MainViewMessageViewModel:ObservableObject{
                 }
             }
     }
+    
+    
+    @MainActor
+    func refreshData() async {
+        // Cancel existing listener
+        messagesListener?.remove()
+
+        // Fetch user data
+        await fetchUserData()
+
+        // Fetch recent messages
+        fetchRecentMessages()
+    }
+    
+    func cancelListeners() {
+        messagesListener?.remove()
+    }
+    
+    deinit {
+        cancelListeners()
+    }
 }
 
 
@@ -90,6 +112,9 @@ struct MainMessageView: View {
                 ScrollView{
                     messagesView
                 }
+                .refreshable {
+                    await vm.refreshData()
+                }
             }
             .onAppear(perform: {
                 Task{
@@ -97,6 +122,9 @@ struct MainMessageView: View {
                     vm.fetchRecentMessages()
                 }
             })
+            .onDisappear {
+                      vm.cancelListeners()
+                  }
             .navigationDestination(for: DBUser.self, destination: { user in
                 ChatLogView(recipient: user)
             })
@@ -222,8 +250,18 @@ extension MainMessageView{
                                 .foregroundStyle(Color(.lightGray))
                         }
                         Spacer()
-                        Text("2 min")
-                            .font(.system(size: 14,weight: .semibold))
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text(recentMessage.formattedTime)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.gray)
+                            
+                            // add an unread message indicator here if needed
+//                             Circle()
+//                                 .fill(Color.blue)
+//                                 .frame(width: 10, height: 10)
+//                                 .opacity(message.isUnread ? 1 : 0)
+                        }
+                        .padding(.trailing)
                     }
                 }
                 
