@@ -21,6 +21,7 @@ struct FirebaseConstants{
     static let documentId = "document_id"
     static let senderName = "sender_name"
     static let recieverName = "reciever_name"
+    static let isUnread = "is_unread"
 }
 
 
@@ -35,6 +36,7 @@ struct MessageModel:Identifiable, Codable,Hashable{
     let senderProfileUrl:String
     let senderName:String
     let recieverName:String
+    let isUnread :Bool
     
     
     var formattedTime: String {
@@ -54,7 +56,8 @@ struct MessageModel:Identifiable, Codable,Hashable{
         senderEmail:String,
         senderProfileUrl:String,
         senderName:String,
-        recieverName : String
+        recieverName : String,
+        isUnread:Bool
     ){
         self.id = id
         self.documentId = documentId
@@ -68,6 +71,7 @@ struct MessageModel:Identifiable, Codable,Hashable{
         self.senderProfileUrl = senderProfileUrl
         self.senderName = senderName
         self.recieverName = recieverName
+        self.isUnread = isUnread
     }
     
     init(documentId:String,data:[String:Any]) {
@@ -82,6 +86,7 @@ struct MessageModel:Identifiable, Codable,Hashable{
         self.senderProfileUrl = data[FirebaseConstants.senderProfileUrl] as? String ?? ""
         self.senderName = data[FirebaseConstants.senderName] as? String ?? ""
         self.recieverName = data[FirebaseConstants.recieverName] as? String ?? ""
+        self.isUnread = data[FirebaseConstants.isUnread] as? Bool ?? true
     }
     
     enum CodingKeys:String, CodingKey {
@@ -97,6 +102,7 @@ struct MessageModel:Identifiable, Codable,Hashable{
         case senderProfileUrl = "sender_profile_url"
         case senderName = "sender_name"
         case recieverName = "reciever_name"
+        case isUnread = "is_unread"
     }
     
     init(from decoder: any Decoder) throws {
@@ -113,6 +119,7 @@ struct MessageModel:Identifiable, Codable,Hashable{
         self.senderProfileUrl = try container.decode(String.self, forKey: .senderProfileUrl)
         self.senderName = try container.decode(String.self, forKey: .senderName)
         self.recieverName = try container.decode(String.self, forKey: .recieverName)
+        self.isUnread = try container.decode(Bool.self, forKey: .isUnread)
     }
     
     func encode(to encoder: any Encoder) throws {
@@ -129,6 +136,7 @@ struct MessageModel:Identifiable, Codable,Hashable{
         try container.encode(self.senderProfileUrl, forKey: .senderProfileUrl)
         try container.encode(self.senderName, forKey: .senderName)
         try container.encode(self.recieverName, forKey: .recieverName)
+        try container.encode(self.isUnread, forKey: .isUnread)
     }
 
 }

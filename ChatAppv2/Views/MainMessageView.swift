@@ -256,10 +256,10 @@ extension MainMessageView{
                                 .foregroundColor(.gray)
                             
                             // add an unread message indicator here if needed
-//                             Circle()
-//                                 .fill(Color.blue)
-//                                 .frame(width: 10, height: 10)
-//                                 .opacity(message.isUnread ? 1 : 0)
+                             Circle()
+                                 .fill(Color.blue)
+                                 .frame(width: 10, height: 10)
+                                 .opacity(recentMessage.isUnread ? 1 : 0)
                         }
                         .padding(.trailing)
                     }

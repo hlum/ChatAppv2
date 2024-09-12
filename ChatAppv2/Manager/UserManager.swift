@@ -106,8 +106,25 @@ final class UserManager{
         return users
     }
     
+    func checkIfUserExistInDatabase(userId:String)async throws ->Bool{
+        let snapshot = try await Firestore.firestore().collection("users").document(userId).getDocument()
+        return snapshot.exists
+    }
     
+    func addUserPreference(userId:String,preference:[String])async throws{
+        let data:[String:Any] = [
+            DBUser.CodingKeys.preferences.rawValue: FieldValue.arrayUnion(preference)
+        ]
         
+        try await userDocuments(userId: userId).updateData(data)
+    }
+    
+}
+
+
+//Messages features
+extension UserManager{
+    
     func storeMessages(message:MessageModel)async{
         let document = messagesCollection
             .document(message.fromId)
@@ -123,8 +140,25 @@ final class UserManager{
                 .document(message.toId)
                 .collection(message.fromId)
                 .document()
+        
+        let messageForRecipient = MessageModel(
+            id: message.id,
+            documentId: message.id,
+            fromId: message.fromId,
+            toId: message.toId,
+            text: message.text,
+            dateCreated: message.dateCreated,
+            recipientProfileUrl: message.senderProfileUrl,//change later
+            recipientEmail: message.senderEmail,
+            senderEmail: message.recipientEmail,
+            senderProfileUrl: message.recipientProfileUrl,
+            senderName: message.recieverName,
+            recieverName : message.senderName,
+            isUnread: true
+        )
+
         do {
-            try documentForRecipient.setData(from: message,encoder: encoder)
+            try documentForRecipient.setData(from: messageForRecipient,encoder: encoder)
         } catch {
             print("UserManager:Error storing message: \(error.localizedDescription)")
         }
@@ -162,7 +196,8 @@ final class UserManager{
             senderEmail: message.recipientEmail,
             senderProfileUrl: message.recipientProfileUrl,
             senderName: message.recieverName,
-            recieverName : message.senderName
+            recieverName : message.senderName,
+            isUnread: true
         )
         
         do {
@@ -177,8 +212,7 @@ final class UserManager{
 
     
     // UserManager.swift
-
-    func getMessages(fromId: String, toId: String, completion: @escaping (MessageModel) -> Void) -> ListenerRegistration {
+    func getMessages(fromId: String, toId: String, completion: @escaping (MessageModel, DocumentChangeType) -> Void) -> ListenerRegistration {
         return messagesCollection
             .document(fromId)
             .collection(toId)
@@ -190,28 +224,52 @@ final class UserManager{
                 }
                 
                 snapshots?.documentChanges.forEach({ change in
-                    if change.type == .added {
-                        let data = change.document.data()
-                        let chatMessage = MessageModel(documentId: change.document.documentID, data: data)
-                        completion(chatMessage) // Pass one message at a time
+                    let data = change.document.data()
+                    let chatMessage = MessageModel(documentId: change.document.documentID, data: data)
+                    
+                    switch change.type {
+                    case .added:
+                        completion(chatMessage, .added)
+                    case .modified:
+                        completion(chatMessage, .modified)
+                    case .removed:
+                        completion(chatMessage, .removed)
                     }
                 })
             }
     }
     
-    func checkIfUserExistInDatabase(userId:String)async throws ->Bool{
-        let snapshot = try await Firestore.firestore().collection("users").document(userId).getDocument()
-        return snapshot.exists
+    
+    func markMessageAsRead(userId: String, chatPartnerId: String) async throws {
+        let reference = recentMessagesCollection
+            .document(userId)
+            .collection("messages")
+            .document(chatPartnerId)
+
+        try await reference.updateData([FirebaseConstants.isUnread: false])
     }
     
-    func addUserPreference(userId:String,preference:[String])async throws{
-        let data:[String:Any] = [
-            DBUser.CodingKeys.preferences.rawValue: FieldValue.arrayUnion(preference)
-        ]
+    func markAllMessagesAsRead(userId: String, chatPartnerId: String) async throws {
+        let reference = recentMessagesCollection
+            .document(userId)
+            .collection("messages")
+            .document(chatPartnerId)
+
+        try await reference.updateData([FirebaseConstants.isUnread: false])
         
-        try await userDocuments(userId: userId).updateData(data)
+        // Also update all individual messages
+        let messagesRef = messagesCollection
+            .document(userId)
+            .collection(chatPartnerId)
+        
+        let query = messagesRef.whereField(FirebaseConstants.isUnread, isEqualTo: true)
+        let snapshot = try await query.getDocuments()
+        
+        for document in snapshot.documents {
+            try await document.reference.updateData([FirebaseConstants.isUnread: false])
+        }
     }
-    
+
 }
 
 

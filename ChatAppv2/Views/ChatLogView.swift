@@ -16,39 +16,52 @@ class ChatLogViewModel:ObservableObject{
 //    @Published var currentUser:AuthDataResultModel? = AuthenticationManager.shared.currentUser
     @Published var currentUserDB : DBUser? = nil
     @Published var chatMessages:[MessageModel] = []
+    private var messagesDictionary : [String:MessageModel] = [:]
     @Published var textFieldText:String = ""
+    
+    @Published var isLoading : Bool = false
     let recipient : DBUser?
     private var messagesListener:ListenerRegistration?
     
     
     init(recipient: DBUser) {
         self.recipient = recipient
-        fetchCurrentDBUser { user in
-            if user != nil{
-                self.fetchMessages()
-            }else{
-                print("ChatlogViewModel/init:NO user found")
-            }
-        }
-        
     }
-    func fetchCurrentDBUser(completion:@escaping(DBUser?)->()){
-        let currentUser =  try? AuthenticationManager.shared.getAuthenticatedUser()
-        guard let userId = currentUser?.uid else{
-            print("ChatLogView/fetchCurrentDBUser:Can't get currentUserId")
+    
+    
+    @MainActor
+    func initialize() async {
+        isLoading = true
+        defer { isLoading = false }
+        
+        await fetchCurrentDBUser()
+        if currentUserDB != nil {
+            fetchMessages()
+            markAllMessagesAsRead()
+        }
+    }
+    
+    
+    func fetchCurrentDBUser() async {
+        let currentUser = try? AuthenticationManager.shared.getAuthenticatedUser()
+        guard let userId = currentUser?.uid else {
+            print("ChatLogView/fetchCurrentDBUser: Can't get currentUserId")
             return
         }
-        Task{
-    
-                let user = try? await UserManager.shared.getUser(userId: userId)
-                DispatchQueue.main.async{
-                    self.currentUserDB = user
-                    completion(user)
-                }
-            
-    }
         
+        do {
+            let user = try await UserManager.shared.getUser(userId: userId)
+            await MainActor.run {
+                self.currentUserDB = user
+            }
+            
+            self.fetchMessages()
+            
+        } catch {
+            print("Error fetching current user: \(error)")
+        }
     }
+
     
     
     func sendMessage() async{
@@ -74,7 +87,8 @@ class ChatLogViewModel:ObservableObject{
             FirebaseConstants.senderEmail : currentUserDB?.email ?? "",
             FirebaseConstants.senderProfileUrl:currentUserDB?.photoUrl ?? "Chat log : No image url",
             FirebaseConstants.senderName : currentUserDB?.name ?? "Can't get sendername messageLogView/sendmessage",
-            FirebaseConstants.recieverName:recipient?.name ?? "Can't get recievername messageLogView/sendmessage"
+            FirebaseConstants.recieverName:recipient?.name ?? "Can't get recievername messageLogView/sendmessage",
+            FirebaseConstants.isUnread : false
         ] as [String : Any]
         
         let message = MessageModel(documentId: "", data: messageData)
@@ -97,12 +111,63 @@ class ChatLogViewModel:ObservableObject{
             return
         }
 
-        messagesListener = UserManager.shared.getMessages(fromId: fromId, toId: toId) { [weak self] message in
+        messagesListener = UserManager.shared.getMessages(fromId: fromId, toId: toId) { [weak self] message,changeType in
+            guard let self = self else { return }
             DispatchQueue.main.async {
-                self?.chatMessages.append(message)
+                self.handleMessageChanges(message: message, changeType: changeType)
+                self.markMessageAsRead(message: message)
             }
         }
     }
+    
+    func handleMessageChanges(message:MessageModel,changeType:DocumentChangeType){
+        let key = message.documentId
+        
+        switch changeType{
+            
+        case .added,.modified:
+            // just update the dictionary
+            messagesDictionary[key] = message
+            
+        case .removed:
+            messagesDictionary.removeValue(forKey: key)
+        }
+        
+        let updateMessages = messagesDictionary.values.sorted {$0.dateCreated.dateValue() < $1.dateCreated.dateValue()}
+        
+        self.chatMessages = updateMessages
+    }
+    
+    private func markMessageAsRead(message: MessageModel) {
+        guard let currentUserId = currentUserDB?.userId,
+              message.toId == currentUserId,
+              message.isUnread else {
+            return
+        }
+
+        Task {
+            do {
+                try await UserManager.shared.markMessageAsRead(userId: currentUserId, chatPartnerId: message.fromId)
+            } catch {
+                print("Error marking message as read: \(error.localizedDescription)")
+            }
+        }
+    }
+    func markAllMessagesAsRead() {
+        guard let currentUserId = currentUserDB?.userId,
+              let chatPartnerId = recipient?.userId else {
+            return
+        }
+
+        Task {
+            do {
+                try await UserManager.shared.markAllMessagesAsRead(userId: currentUserId, chatPartnerId: chatPartnerId)
+            } catch {
+                print("Error marking all messages as read: \(error.localizedDescription)")
+            }
+        }
+    }
+    
     func cancelListeners() {
         messagesListener?.remove()
     }
@@ -117,18 +182,25 @@ class ChatLogViewModel:ObservableObject{
 
 
 struct ChatLogView:View {
-    @ObservedObject var vm : ChatLogViewModel
-    init(recipient:DBUser){
-        self.vm = ChatLogViewModel(recipient: recipient)
-    }
+    @StateObject var vm : ChatLogViewModel
+    init(recipient: DBUser) {
+            _vm = StateObject(wrappedValue: ChatLogViewModel(recipient: recipient))
+        }
     
     var body : some View{
         VStack{
-            MessagesView
-                
-            ChatBottomBar
+            if vm.isLoading {
+                ProgressView()
+            } else {
+                MessagesView
+                ChatBottomBar
+            }
 
         }
+        .task {
+            await vm.initialize()
+        }
+
         .onDisappear {
             vm.cancelListeners()
         }
