@@ -111,12 +111,24 @@ final class UserManager{
         return snapshot.exists
     }
     
-    func addUserPreference(userId:String,preference:[String])async throws{
+    func addUserPreference(userId:String,preference:String)async throws{
         let data:[String:Any] = [
-            DBUser.CodingKeys.preferences.rawValue: FieldValue.arrayUnion(preference)
+            DBUser.CodingKeys.preferences.rawValue: FieldValue.arrayUnion([preference])
         ]
         
         try await userDocuments(userId: userId).updateData(data)
+    }
+    
+    func removeUserPreference(userId:String,preference:String)async throws{
+        let data:[String:Any] = [
+            DBUser.CodingKeys.preferences.rawValue : FieldValue.arrayRemove([preference])
+        ]
+        try await userDocuments(userId: userId).updateData(data)
+    }
+    
+    func updateUserName(userId:String,name:String)async throws{
+        let newData:[String:Any] = ["name":name]
+        try await userDocuments(userId: userId).updateData(newData)
     }
     
 }

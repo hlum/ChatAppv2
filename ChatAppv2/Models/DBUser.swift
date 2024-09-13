@@ -18,7 +18,16 @@ struct DBUser:Identifiable, Codable , Hashable {
     let preferences:[String]?
     let age : Double?
     
-    
+    init(id:String,userId:String,name:String,email:String,photoUrl:String,dateCreated:Timestamp,preferences:[String],age:Double){
+        self.id = id
+        self.userId = userId
+        self.name = name
+        self.email = email
+        self.photoUrl = photoUrl
+        self.dateCreated = dateCreated
+        self.preferences = preferences
+        self.age = age
+    }
     
     init(recentMessage:MessageModel,currentUser:DBUser){
         self.userId = {

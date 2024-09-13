@@ -108,7 +108,13 @@ struct MainMessageView: View {
         NavigationStack{
             
             VStack{
-                customNavBar
+                NavigationLink {
+                    ProfileView(isUser: true)
+                } label: {
+                    customNavBar
+                        .foregroundStyle(Color(.black))
+                }
+
                 ScrollView{
                     messagesView
                 }
