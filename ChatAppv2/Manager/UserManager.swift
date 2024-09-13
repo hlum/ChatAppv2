@@ -129,7 +129,7 @@ extension UserManager{
         let document = messagesCollection
             .document(message.fromId)
             .collection(message.toId)
-            .document()
+            .document(message.id)
         do {
             try document.setData(from: message,encoder: encoder)
         } catch {
@@ -139,7 +139,7 @@ extension UserManager{
         let documentForRecipient = messagesCollection
                 .document(message.toId)
                 .collection(message.fromId)
-                .document()
+                .document(message.id)
         
         let messageForRecipient = MessageModel(
             id: message.id,
@@ -226,6 +226,7 @@ extension UserManager{
                 snapshots?.documentChanges.forEach({ change in
                     let data = change.document.data()
                     let chatMessage = MessageModel(documentId: change.document.documentID, data: data)
+                    print("Fetched document ID: \(change.document.documentID)")
                     
                     switch change.type {
                     case .added:
@@ -240,14 +241,37 @@ extension UserManager{
     }
     
     
-    func markMessageAsRead(userId: String, chatPartnerId: String) async throws {
-        let reference = recentMessagesCollection
+    func getLastReadMessage(userId: String, chatPartnerId: String, completion: @escaping (String?) -> Void) -> ListenerRegistration {
+        return messagesCollection
             .document(userId)
-            .collection("messages")
-            .document(chatPartnerId)
+            .collection(chatPartnerId)
+            .whereField(FirebaseConstants.isUnread, isEqualTo: false)
+            .order(by: FirebaseConstants.dateCreated, descending: true)
+            .limit(to: 1)
 
-        try await reference.updateData([FirebaseConstants.isUnread: false])
+            .addSnapshotListener { querySnapshot, error in
+                guard let documents = querySnapshot?.documents,
+                      !documents.isEmpty else {
+                    print("No read messages found or error: \(error?.localizedDescription ?? "Unknown error")")
+                    completion(nil)
+                    return
+                }
+                
+                let lastMessageId = documents[0].documentID
+                completion(lastMessageId)
+            }
     }
+
+    func markMessageAsRead(userId: String, chatPartnerId: String, messageId: String) async throws {
+        let messageRef = messagesCollection
+            .document(userId)
+            .collection(chatPartnerId)
+            .document(messageId)
+
+        try await messageRef.updateData([FirebaseConstants.isUnread: false])
+    }
+
+
     
     func markAllMessagesAsRead(userId: String, chatPartnerId: String) async throws {
         let reference = recentMessagesCollection
@@ -269,6 +293,10 @@ extension UserManager{
             try await document.reference.updateData([FirebaseConstants.isUnread: false])
         }
     }
+    
+    
+    
+
 
 }
 

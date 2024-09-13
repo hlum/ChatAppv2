@@ -9,6 +9,7 @@ import Foundation
 import FirebaseCore
 
 struct FirebaseConstants{
+    static let id = "id"
     static let fromId = "from_id"
     static let toId = "to_id"
     static let text = "text"
@@ -60,7 +61,7 @@ struct MessageModel:Identifiable, Codable,Hashable{
         isUnread:Bool
     ){
         self.id = id
-        self.documentId = documentId
+        self.documentId = id
         self.fromId = fromId
         self.toId = toId
         self.text = text
@@ -74,6 +75,21 @@ struct MessageModel:Identifiable, Codable,Hashable{
         self.isUnread = isUnread
     }
     
+    //受けたIDは使わない
+    init(documentId:String,id:String,data:[String:Any]){
+        self.documentId = self.id
+        self.fromId = data[FirebaseConstants.fromId] as? String ?? ""
+        self.toId = data[FirebaseConstants.toId] as? String ?? ""
+        self.text = data[FirebaseConstants.text] as? String ?? ""
+        self.dateCreated = data[FirebaseConstants.dateCreated] as? Timestamp ?? Timestamp(date: Date())
+        self.recipientProfileUrl = data[FirebaseConstants.recipientProfileUrl] as? String ?? ""
+        self.recipientEmail = data[FirebaseConstants.recipientEmail] as? String ?? ""
+        self.senderEmail = data[FirebaseConstants.senderEmail] as? String ?? ""
+        self.senderProfileUrl = data[FirebaseConstants.senderProfileUrl] as? String ?? ""
+        self.senderName = data[FirebaseConstants.senderName] as? String ?? ""
+        self.recieverName = data[FirebaseConstants.recieverName] as? String ?? ""
+        self.isUnread = data[FirebaseConstants.isUnread] as? Bool ?? true
+    }
     init(documentId:String,data:[String:Any]) {
         self.documentId = documentId
         self.fromId = data[FirebaseConstants.fromId] as? String ?? ""

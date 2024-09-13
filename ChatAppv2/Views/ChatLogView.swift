@@ -8,21 +8,26 @@
 import SwiftUI
 import FirebaseCore
 import Firebase
+import SDWebImageSwiftUI
 
 
 
-
-class ChatLogViewModel:ObservableObject{
-//    @Published var currentUser:AuthDataResultModel? = AuthenticationManager.shared.currentUser
-    @Published var currentUserDB : DBUser? = nil
-    @Published var chatMessages:[MessageModel] = []
-    private var messagesDictionary : [String:MessageModel] = [:]
-    @Published var textFieldText:String = ""
+class ChatLogViewModel: ObservableObject {
+    @Published var currentUserDB: DBUser? = nil
+    @Published var chatMessages: [MessageModel] = []
     
-    @Published var isLoading : Bool = false
-    let recipient : DBUser?
-    private var messagesListener:ListenerRegistration?
+    @Published var lastReadMessageId: String? = nil
+    private var messagesDictionary: [String: MessageModel] = [:]
     
+    @Published var textFieldText: String = ""
+    
+    let recipient: DBUser?
+    
+    
+    private var messagesListener: ListenerRegistration?
+    private var lastReadListener: ListenerRegistration?
+    
+    @Published var isLoading: Bool = false
     
     init(recipient: DBUser) {
         self.recipient = recipient
@@ -37,10 +42,11 @@ class ChatLogViewModel:ObservableObject{
         await fetchCurrentDBUser()
         if currentUserDB != nil {
             fetchMessages()
+            fetchLastReadMessage()
             markAllMessagesAsRead()
         }
     }
-    
+
     
     func fetchCurrentDBUser() async {
         let currentUser = try? AuthenticationManager.shared.getAuthenticatedUser()
@@ -91,7 +97,7 @@ class ChatLogViewModel:ObservableObject{
             FirebaseConstants.isUnread : false
         ] as [String : Any]
         
-        let message = MessageModel(documentId: "", data: messageData)
+        let message = MessageModel(documentId: "",id:"" , data: messageData)
         
         await UserManager.shared.storeMessages(message: message)
         DispatchQueue.main.async {
@@ -138,7 +144,7 @@ class ChatLogViewModel:ObservableObject{
         self.chatMessages = updateMessages
     }
     
-    private func markMessageAsRead(message: MessageModel) {
+    func markMessageAsRead(message: MessageModel) {
         guard let currentUserId = currentUserDB?.userId,
               message.toId == currentUserId,
               message.isUnread else {
@@ -147,12 +153,13 @@ class ChatLogViewModel:ObservableObject{
 
         Task {
             do {
-                try await UserManager.shared.markMessageAsRead(userId: currentUserId, chatPartnerId: message.fromId)
+                try await UserManager.shared.markMessageAsRead(userId: currentUserId, chatPartnerId: message.fromId, messageId: message.documentId)
             } catch {
                 print("Error marking message as read: \(error.localizedDescription)")
             }
         }
     }
+
     func markAllMessagesAsRead() {
         guard let currentUserId = currentUserDB?.userId,
               let chatPartnerId = recipient?.userId else {
@@ -168,8 +175,23 @@ class ChatLogViewModel:ObservableObject{
         }
     }
     
+    func fetchLastReadMessage() {
+         guard let currentUserId = currentUserDB?.userId,
+               let recipientId = recipient?.userId else {
+             return
+         }
+         
+         lastReadListener = UserManager.shared.getLastReadMessage(userId: recipientId, chatPartnerId: currentUserId) { [weak self] lastReadMessageId in
+             DispatchQueue.main.async {
+                 self?.lastReadMessageId = lastReadMessageId
+             }
+         }
+     }
+
+    
     func cancelListeners() {
         messagesListener?.remove()
+        lastReadListener?.remove()
     }
 
     deinit {
@@ -192,7 +214,7 @@ struct ChatLogView:View {
             if vm.isLoading {
                 ProgressView()
             } else {
-                MessagesView
+                messagesView
                 ChatBottomBar
             }
 
@@ -211,25 +233,40 @@ struct ChatLogView:View {
 
 extension ChatLogView{
     
-    private var MessagesView:some View{
-        ScrollView{
+    private var messagesView: some View {
+        ScrollView {
             ScrollViewReader { scrollViewProxy in
-                ForEach(vm.chatMessages){chatMessage in
-                    MessageBubbleView(chatMessage:chatMessage)
-                }
-                HStack{ Spacer() }
-                    .id("Empty")
-                    .onChange(of: vm.chatMessages.count) { _ , _ in
-                        // Scroll to the bottom whenever a new message is added
-                        withAnimation {
-                            scrollViewProxy.scrollTo("Empty", anchor: .bottom)
+                LazyVStack {
+                    ForEach(vm.chatMessages) { message in
+                        MessageView(message: message, isFromCurrentUser: message.fromId == vm.currentUserDB?.userId)
+                        HStack{
+                            Spacer()
+                            if message.documentId == vm.lastReadMessageId &&
+                                message.fromId == vm.currentUserDB?.userId
+                            {
+                                WebImage(url: URL(string: vm.recipient?.photoUrl ?? ""))
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 15, height: 15)
+                                    .clipShape(Circle())
+                                    .overlay(Circle().stroke(Color.white, lineWidth: 1))
+                                    .offset(x: 10, y: 10)
+                                    .padding()
+                            }
                         }
                     }
+                    HStack{ Spacer() }
+                        .id("Empty")
+                        .onChange(of: vm.chatMessages.count) { _ , _ in
+                            // Scroll to the bottom whenever a new message is added
+                            withAnimation {
+                                scrollViewProxy.scrollTo("Empty", anchor: .bottom)
+                            }
+                        }
+                }
+                
             }
         }
-        .padding(.bottom,20)
-        .background(Color(.init(white:0.95,alpha:1)))
-        
     }
     
     private var ChatBottomBar: some View{
@@ -259,43 +296,22 @@ extension ChatLogView{
 
 
 
-struct MessageBubbleView :View {
-    let chatMessage:MessageModel
+struct MessageView: View {
+    let message: MessageModel
+    let isFromCurrentUser: Bool
+    
     var body: some View {
-        VStack{
-            if let currentUser = AuthenticationManager.shared.currentUser {
-                if chatMessage.fromId == currentUser.uid{
-                    HStack{
-                        Spacer()
-                        HStack{
-                            Text(chatMessage.text)
-                                .foregroundStyle(Color(.white))
-                        }
-                        .padding()
-                        .background(.blue)
-                        .cornerRadius(10)
-                        .padding(.bottom,1)
-                        
-                    }
-                    .padding(.horizontal)
-                }else{
-                    HStack{
-                        HStack{
-                            Text(chatMessage.text)
-                                .foregroundStyle(Color(.black))
-                        }
-                        .padding()
-                        .background(.white)
-                        .cornerRadius(10)
-                        .padding(.bottom,1)
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal)
-                    
-                }
-                
-            }
+        HStack {
+            if isFromCurrentUser { Spacer() }
+            
+            Text(message.text)
+                .padding()
+                .background(isFromCurrentUser ? Color.blue : Color.gray.opacity(0.2))
+                .foregroundColor(isFromCurrentUser ? .white : .black)
+                .cornerRadius(10)
+            
+            if !isFromCurrentUser { Spacer() }
         }
+        .padding(.horizontal)
     }
 }
