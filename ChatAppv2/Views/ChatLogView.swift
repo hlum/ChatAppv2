@@ -226,7 +226,7 @@ struct ChatLogView:View {
         .onDisappear {
             vm.cancelListeners()
         }
-        .navigationTitle(vm.recipient?.email ?? "")
+        .navigationTitle(vm.recipient?.name ?? "")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

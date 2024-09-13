@@ -62,7 +62,7 @@ struct CreateNewMessageView: View {
                                         .frame(width:50,height: 50)
                                 }
                                 
-                                Text(user.email ?? "")
+                                Text(user.name ?? "")
                                 
                                 Spacer()
                             }

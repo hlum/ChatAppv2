@@ -226,7 +226,6 @@ extension UserManager{
                 snapshots?.documentChanges.forEach({ change in
                     let data = change.document.data()
                     let chatMessage = MessageModel(documentId: change.document.documentID, data: data)
-                    print("Fetched document ID: \(change.document.documentID)")
                     
                     switch change.type {
                     case .added:
