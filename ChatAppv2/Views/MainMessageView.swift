@@ -163,13 +163,15 @@ extension MainMessageView{
                     )
                     .shadow(radius: 5)
             } placeholder: {
-                ProgressView(value: 0.8)
-                    .frame(width: 50,height: 50)
+                Image(.profilePic)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 60,height: 60)
                     .padding()
             }
 
             VStack(alignment:.leading,spacing: 4){
-                let name = vm.chatUser?.name ?? "Can't get name"
+                let name = vm.chatUser?.name ?? "........"
                 Text(name)
                     .font(.system(size: 24,weight:.bold))
                 
@@ -236,10 +238,12 @@ extension MainMessageView{
                             
                             
                         } placeholder: {
-                            ProgressView(value: 0.8)
+                            Image(.profilePic)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
                                 .frame(width: 65,height: 65)
                                 .padding()
-                            
+
                         }
                         
                         VStack(alignment:.leading){

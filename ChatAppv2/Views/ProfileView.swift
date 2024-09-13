@@ -7,11 +7,62 @@
 import SwiftUI
 import Firebase
 import SDWebImageSwiftUI
+import _PhotosUI_SwiftUI
 
 @MainActor
 final class ProfileViewModel:ObservableObject{
+    @Published var isLoading:Bool = false
+    @Published var progress:Double = 0.0
     @Published var user :DBUser? = nil
     @Published var newName:String = ""
+    
+    @Published var imageSelection:PhotosPickerItem? = nil
+    
+    @Published var showAlert:Bool = false
+    @Published var alertTitle:String = ""
+    
+    
+    func loadTransferableImage()async{
+        isLoading = true
+        progress = 0
+    
+        guard let imageSelection else {
+            print("No imageSelection")
+            return
+        }
+        updateProgress(0.2)
+        Task {
+            do {
+                let transferableImage = try await imageSelection.loadTransferable(type: TransferableImage.self)
+                updateProgress(0.3)
+                let newImage = transferableImage?.image
+                updateProgress(0.4)
+                await saveNewImage(newImage: newImage)
+                try await reloadUser()
+                updateProgress(1)
+                isLoading = false
+            } catch {
+                print("Failed to load transferable image: \(error)")
+                isLoading = false
+            }
+        }
+    }
+    
+    func saveNewImage(newImage:UIImage?) async{
+        guard let user = self.user,
+              let newImage = newImage
+        else{return}
+        
+        guard let downLoadUrl = try? await UserManager.shared.saveImageInStorage(image: newImage, userId: user.userId)else {return}
+        updateProgress(0.5)
+        UserManager.shared.changeNewProfileImageUrl(downloadUrl: downLoadUrl, userId: user.userId)
+        updateProgress(0.8)
+    }
+    
+    func showAlert(title:String){
+        self.showAlert = true
+        self.alertTitle = title
+    }
     
     func preferenceIsSelected(_ text:String) -> Bool{
         user?.preferences?.contains(text) == true
@@ -60,6 +111,7 @@ final class ProfileViewModel:ObservableObject{
             print("Error adding interest:\(error.localizedDescription)")
         }
     }
+    
     @MainActor
     private func reloadUser() async throws{
         guard let user = self.user else{
@@ -70,11 +122,19 @@ final class ProfileViewModel:ObservableObject{
         }
         
     }
+    
+    @MainActor
+    private func updateProgress(_ newProgress: Double) {
+        progress = newProgress
+    }
+
 }
 
 struct ProfileView: View {
     @StateObject var vm = ProfileViewModel()
     @State private var isEditing = false
+    @State private var isEditingName = false
+    @State private var isEditingPreferences = false
     var isUser: Bool
 
     // Custom colors
@@ -84,94 +144,180 @@ struct ProfileView: View {
     private let subtitleColor = Color.gray
 
     var body: some View {
-        VStack(spacing: 20) {
-            WebImage(url: URL(string: vm.user?.photoUrl ?? "")) { image in
-                image
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 130, height: 130)
-                    .clipShape(Circle())
-                    .overlay(
-                        Circle()
-                            .stroke(Color(.customBlack), lineWidth: 4)
-                    )
-                    .shadow(color: .gray.opacity(0.4), radius: 10, x: 0, y: 5)
-            } placeholder: {
-                ProgressView()
-                    .frame(width: 130, height: 130)
-                    .clipShape(Circle())
-            }
-            .padding(.top, 16)
-            
-            // Editable Name
-            if isEditing {
-                TextField(vm.user?.name ?? "", text: $vm.newName)
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(textColor)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding()
-            } else {
-                Text(vm.user?.name ?? "Error" )
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(textColor)
-            }
-            
-            // User Email
-            if !isEditing{
-                if let email = vm.user?.email {
-                    Text(email)
-                        .font(.subheadline)
-                        .foregroundColor(subtitleColor)
+        ZStack{
+            VStack(spacing: 10) {
+                ImagePickerView
+                    .onAppear{
+                        checkThePermission()
+                    }
+                    .overlay(alignment:.bottomTrailing) {
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(Color(.blue))
+                    }
+                    .onChange(of: vm.imageSelection) {
+                        Task{
+                            await vm.loadTransferableImage()
+                        }
+                    }
+                
+                // Editable Name
+                    Text(vm.user?.name ?? "Error" )
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(textColor)
+                        .onTapGesture {
+                            withAnimation {
+                                isEditingName.toggle()
+                            }
+                        }
+                
+                // User Email
+                if !isEditing{
+                    if let email = vm.user?.email {
+                        Text(email)
+                            .font(.subheadline)
+                            .foregroundColor(subtitleColor)
+                    }
                 }
-            }
-            
-            // User Age
-            if !isEditing{
-                if let age = vm.user?.age {
-                    Text("Age: \(Int(age))")
-                        .font(.subheadline)
-                        .foregroundColor(subtitleColor)
+                
+                // User Age
+                if !isEditing{
+                    if let age = vm.user?.age {
+                        Text("Age: \(Int(age))")
+                            .font(.subheadline)
+                            .foregroundColor(subtitleColor)
+                    }
                 }
-            }
-            
-            // Editable Preferences Section
-            if isEditing {
-                userInterestsSection
-            } else {
-                preferencesSection
-            }
-            
-            Spacer()
-            
-            // Edit Button
-            Button(action: {
-                isEditing.toggle()
-                if !isEditing {
-                    // Save the changes when finished editing
-                    saveChanges()
+                
+                // Editable Preferences Section
+                if isEditing {
+                    userInterestsSection
+                } else {
+                    preferencesSection
                 }
-            }) {
-                Text(isEditing ? "Save" : "Edit Profile")
-                    .font(.headline)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(accentColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                    .padding(.horizontal)
+                
+                Spacer()
+                
+                // Edit Button
+                Button(action: {
+                    isEditing.toggle()
+                    if !isEditing {
+                        // Save the changes when finished editing
+                        saveChanges()
+                    }
+                }) {
+                    Text(isEditing ? "Save" : "Edit Profile")
+                        .font(.headline)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(accentColor)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                        .padding(.horizontal)
+                }
+                if isEditing{
+                    Button {
+                        isEditing = false
+                    } label: {
+                        Text("Cancel")
+                            .font(.headline)
+                            .foregroundStyle(Color(.red))
+                            .padding()
+                    }
+                }
+                
             }
-        }
-        .onAppear{
-            try? vm.loadCurrentUser()
-        }
+            .padding()
+            .background(backgroundColor)
+            .cornerRadius(15)
+            .shadow(color: .gray.opacity(0.2), radius: 10, x: 0, y: 5)
+            .padding()
+            .navigationTitle(isUser ? "Your Profile" : "\(vm.user?.name ?? "User")'s Profile")
+            .navigationBarTitleDisplayMode(.inline)
+            .alert(isPresented: $vm.showAlert) {
+                Alert(title: Text(vm.alertTitle))
+            }
+            .onAppear{
+                try? vm.loadCurrentUser()
+            }
+            
+            
+            //Editing Views
+            if isEditingName{
+                Color.black.opacity(0.4).ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation {
+                            isEditingName = false
+                        }
+                    }
+                VStack{
+                    Spacer()
+                    Text("新しい名前を入力してください")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(Color.customWhite)
+                    
+                    TextField("ここに名前を入力...", text: $vm.newName)
+                        .font(.headline)
+                        .frame(height: 55)
+                        .padding(.horizontal)
+                        .background(.white)
+                        .cornerRadius(10)
+                    
+                    Spacer()
+                    VStack{
+                        Button {
+                            saveNewName()
+                        } label: {
+                            Text("保存")
+                                .font(.headline)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(.blue.gradient)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                                .padding(.horizontal)
+                        }
+                        Button {
+                            isEditingName = false
+                        } label: {
+                            Text("キャンセル")
+                                .font(.headline)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(.red.gradient)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                                .padding(.horizontal)
+                        }
+                    }
+                    .padding(.bottom)
 
-        .padding()
-        .background(backgroundColor)
-        .cornerRadius(15)
-        .shadow(color: .gray.opacity(0.2), radius: 10, x: 0, y: 5)
-        .padding()
-        .navigationTitle(isUser ? "Your Profile" : "\(vm.user?.name ?? "User")'s Profile")
-        .navigationBarTitleDisplayMode(.inline)
+                }
+                .padding()
+            }
+            
+            if vm.isLoading {
+                Color.black.opacity(0.8).ignoresSafeArea()
+                VStack {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(2)
+                    
+                    ProgressView(value: vm.progress)
+                        .frame(width: 200)
+                        .tint(.white)
+                        .padding()
+                    
+                    Text("\(Int(vm.progress * 100))%")
+                        .foregroundColor(.white)
+                        .font(.headline)
+                }
+            }
+        }
+            
+            
+              
     }
     
     // Displaying selected preferences when not editing
@@ -182,16 +328,22 @@ struct ProfileView: View {
                 .foregroundColor(accentColor)
                 .padding(.bottom, 4)
             
-            ForEach(vm.user?.preferences ?? [], id: \.self) { preference in
-                HStack {
-                    Circle()
-                        .fill(accentColor)
-                        .frame(width: 8, height: 8)
-                    Text(preference)
-                        .font(.body)
-                        .foregroundColor(textColor)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(vm.user?.preferences ?? [], id: \.self) { preference in
+                        HStack {
+                            Circle()
+                                .fill(accentColor)
+                                .frame(width: 8, height: 8)
+                            Text(preference)
+                                .font(.body)
+                                .foregroundColor(textColor)
+                        }
+                        .padding(.vertical, 4) // Add vertical padding to each item
+                    }
                 }
             }
+            .frame(maxWidth: .infinity)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
@@ -233,11 +385,74 @@ struct ProfileView: View {
 
     // Function to save changes
     private func saveChanges() {
-        Task{
-            await vm.updateName()
+        if vm.newName.isEmpty{
+            vm.showAlert(title: "新しい名前を入力してください！！")
+        }else{
+            Task{
+                await vm.updateName()
+            }
+        }
+    }
+    
+    private func saveNewName(){
+        if vm.newName.isEmpty{
+            vm.showAlert(title: "新しい名前を入力してください！！")
+        }else{
+            Task{
+                await vm.updateName()
+                DispatchQueue.main.async {
+                    isEditingName = false
+                }
+            }
+            
+        }
+    }
+    
+    private func checkThePermission(){
+        let accessType = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        if accessType != .authorized{
+            Task{
+                await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+            }
         }
     }
 }
+
+
+extension ProfileView{
+    private var ImagePickerView : some View{
+        VStack{
+            PhotosPicker(selection: $vm.imageSelection,matching: .images) {
+                profileImage
+            }
+        }
+    }
+    
+    private var profileImage:some View{
+        VStack{
+            WebImage(url: URL(string: vm.user?.photoUrl ?? "")) { image in
+                image
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 130, height: 130)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(Color(.customBlack), lineWidth: 4)
+                    )
+                    .shadow(color: .gray.opacity(0.4), radius: 10, x: 0, y: 5)
+            } placeholder: {
+                Image(.profilePic)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 130, height: 130)
+                    .clipShape(Circle())
+            }
+            
+        }
+    }
+}
+
 
 let interests = [
     "スポーツ", "音楽", "映画", "読書", "料理", "旅行", "ゲーム", "アート",

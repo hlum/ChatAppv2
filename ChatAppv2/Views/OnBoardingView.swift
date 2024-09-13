@@ -102,7 +102,10 @@ extension OnboardingViewModel{
             await updateProgress(0.2)
             let photoURL = try await UserManager.shared.saveImageInStorage(image: profileImage, userId: authDataResult.uid)
             await updateProgress(0.6)
-            
+//            let photoURL = try await UserManager.shared.saveImageInStorage(image: profileImage, userId: authDataResult.uid){ percentCompleted in
+//                await updateProgress(0.6)
+//            }
+
             let newUser = DBUser(
                 authDataResult: authDataResult,
                 photoUrl: photoURL,

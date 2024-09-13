@@ -42,6 +42,7 @@ final class UserManager{
         return decoder
     }()
     
+    @discardableResult
     func saveImageInStorage(image:UIImage,userId:String)async throws -> String{
         
         let reference = Storage.storage().reference(withPath:userId)
@@ -55,7 +56,6 @@ final class UserManager{
             _ = try await reference.putDataAsync(data, metadata: nil) { progress in
                 guard let progress = progress else { return }
                 let percentComplete = 100.0 * Double(progress.completedUnitCount) / Double(progress.totalUnitCount)
-                print("Upload is \(percentComplete)% complete")
             }
             
             
@@ -68,6 +68,12 @@ final class UserManager{
             throw error
         }
     }
+    
+    func changeNewProfileImageUrl(downloadUrl:String,userId:String){
+        let data:[String:Any] = [FirebaseConstants.profileImageUrl:downloadUrl]
+        userDocuments(userId: userId).updateData(data)
+    }
+
     
     //this isn't really a async func but writting datas in the database might take some times
     func storeNewUser(user:DBUser) async {
@@ -164,7 +170,7 @@ extension UserManager{
             recipientEmail: message.senderEmail,
             senderEmail: message.recipientEmail,
             senderProfileUrl: message.recipientProfileUrl,
-            senderName: message.recieverName,
+            senderName: message.senderName,
             recieverName : message.senderName,
             isUnread: true
         )

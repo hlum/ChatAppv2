@@ -38,14 +38,14 @@ struct DBUser:Identifiable, Codable , Hashable {
             }
         }()
         self.email = {
-            if recentMessage.senderEmail == currentUser.email{
+            if recentMessage.toId == currentUser.userId{
                 return recentMessage.recipientEmail
             }else{
                 return recentMessage.senderEmail
             }
         }()
         self.photoUrl = {
-            if recentMessage.senderProfileUrl == currentUser.photoUrl{
+            if recentMessage.toId == currentUser.userId{
                 return recentMessage.recipientProfileUrl
             }else{
                 return recentMessage.senderProfileUrl
@@ -54,7 +54,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.dateCreated = recentMessage.dateCreated
         self.preferences = nil
         self.name = {
-            if recentMessage.senderName == currentUser.name{
+            if recentMessage.toId == currentUser.userId{
                 return recentMessage.recieverName
             }else{
                 return recentMessage.senderName
