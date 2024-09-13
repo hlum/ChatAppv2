@@ -170,7 +170,7 @@ extension UserManager{
             recipientEmail: message.senderEmail,
             senderEmail: message.recipientEmail,
             senderProfileUrl: message.recipientProfileUrl,
-            senderName: message.senderName,
+            senderName: message.recieverName,
             recieverName : message.senderName,
             isUnread: true
         )

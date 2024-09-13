@@ -247,13 +247,11 @@ extension MainMessageView{
                         }
                         
                         VStack(alignment:.leading){
-                            if recentMessage.senderName == vm.chatUser?.name ?? "No email"{
-                                Text(recentMessage.recieverName)
+                                
+                            Text(recentMessage.recieverName)
                                     .font(.system(size: 16,weight: .bold))
-                            }else{
-                                Text(recentMessage.recieverName)
-                                    .font(.system(size: 16,weight: .bold))
-                            }
+                          
+                            
                             
                             Text(recentMessage.text)
                                 .font(.system(size: 14))
