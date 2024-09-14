@@ -127,176 +127,135 @@ final class ProfileViewModel:ObservableObject{
     private func updateProgress(_ newProgress: Double) {
         progress = newProgress
     }
+    
+    func logOut(){
+        AuthenticationManager.shared.signOut()
+    }
+
 
 }
-
+enum EditingOprions{
+    case EditingName
+    case EditiingPreferences
+}
 struct ProfileView: View {
+    @Binding var isUserCurrentlyLogOut:Bool
     @StateObject var vm = ProfileViewModel()
     @State private var isEditing = false
-    @State private var isEditingName = false
-    @State private var isEditingPreferences = false
+    @State private var editingOption:EditingOprions? = nil
     var isUser: Bool
 
     // Custom colors
-    private let accentColor = Color.blue
-    private let backgroundColor = Color(.systemGray6)
+    private let accentColor = Color.customOrange
     private let textColor = Color.primary
     private let subtitleColor = Color.gray
 
     var body: some View {
         ZStack{
-            VStack(spacing: 10) {
-                ImagePickerView
-                    .onAppear{
-                        checkThePermission()
-                    }
-                    .overlay(alignment:.bottomTrailing) {
-                        Image(systemName: "pencil.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(Color(.blue))
-                    }
-                    .onChange(of: vm.imageSelection) {
-                        Task{
-                            await vm.loadTransferableImage()
+            ScrollView(showsIndicators:false){
+                VStack(spacing: 10) {
+                    ImagePickerView
+                        .onAppear{
+                            checkThePermission()
                         }
-                    }
-                
-                // Editable Name
-                    Text(vm.user?.name ?? "Error" )
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(textColor)
-                        .onTapGesture {
-                            withAnimation {
-                                isEditingName.toggle()
+                        .overlay(alignment:.bottomTrailing) {
+                            Image(systemName: "pencil.circle.fill")
+                                .font(.title2)
+                                .foregroundStyle(Color(.blue))
+                        }
+                        .onChange(of: vm.imageSelection) {
+                            Task{
+                                await vm.loadTransferableImage()
                             }
                         }
-                
-                // User Email
-                if !isEditing{
-                    if let email = vm.user?.email {
-                        Text(email)
-                            .font(.subheadline)
-                            .foregroundColor(subtitleColor)
-                    }
-                }
-                
-                // User Age
-                if !isEditing{
-                    if let age = vm.user?.age {
-                        Text("Age: \(Int(age))")
-                            .font(.subheadline)
-                            .foregroundColor(subtitleColor)
-                    }
-                }
-                
-                // Editable Preferences Section
-                if isEditing {
-                    userInterestsSection
-                } else {
-                    preferencesSection
-                }
-                
-                Spacer()
-                
-                // Edit Button
-                Button(action: {
-                    isEditing.toggle()
-                    if !isEditing {
-                        // Save the changes when finished editing
-                        saveChanges()
-                    }
-                }) {
-                    Text(isEditing ? "Save" : "Edit Profile")
-                        .font(.headline)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(accentColor)
+                    
+                    // Editable Name
+                    Text(vm.user?.name ?? "Error" )
+                        .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.white)
-                        .cornerRadius(10)
-                        .padding(.horizontal)
-                }
-                if isEditing{
-                    Button {
-                        isEditing = false
-                    } label: {
-                        Text("Cancel")
-                            .font(.headline)
-                            .foregroundStyle(Color(.red))
-                            .padding()
-                    }
-                }
-                
-            }
-            .padding()
-            .background(backgroundColor)
-            .cornerRadius(15)
-            .shadow(color: .gray.opacity(0.2), radius: 10, x: 0, y: 5)
-            .padding()
-            .navigationTitle(isUser ? "Your Profile" : "\(vm.user?.name ?? "User")'s Profile")
-            .navigationBarTitleDisplayMode(.inline)
-            .alert(isPresented: $vm.showAlert) {
-                Alert(title: Text(vm.alertTitle))
-            }
-            .onAppear{
-                try? vm.loadCurrentUser()
-            }
-            
-            
-            //Editing Views
-            if isEditingName{
-                Color.black.opacity(0.4).ignoresSafeArea()
-                    .onTapGesture {
-                        withAnimation {
-                            isEditingName = false
+                        .onTapGesture {
+                            withAnimation {
+                                editingOption = .EditingName
+                            }
+                        }
+                    
+                    // User Email
+                    if !isEditing{
+                        if let email = vm.user?.email {
+                            Text(email)
+                                .font(.subheadline)
+                                .foregroundColor(subtitleColor)
                         }
                     }
-                VStack{
-                    Spacer()
-                    Text("新しい名前を入力してください")
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .foregroundColor(Color.customWhite)
                     
-                    TextField("ここに名前を入力...", text: $vm.newName)
-                        .font(.headline)
-                        .frame(height: 55)
-                        .padding(.horizontal)
-                        .background(.white)
-                        .cornerRadius(10)
+                    // User Age
+                    if !isEditing{
+                        if let age = vm.user?.age {
+                            Text("Age: \(Int(age))")
+                                .font(.subheadline)
+                                .foregroundColor(subtitleColor)
+                        }
+                    }
+                    
+                    // Editable Preferences Section
+                    preferencesSection
                     
                     Spacer()
-                    VStack{
-                        Button {
-                            saveNewName()
-                        } label: {
-                            Text("保存")
-                                .font(.headline)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(.blue.gradient)
-                                .foregroundColor(.white)
-                                .cornerRadius(10)
-                                .padding(.horizontal)
-                        }
-                        Button {
-                            isEditingName = false
-                        } label: {
-                            Text("キャンセル")
-                                .font(.headline)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(.red.gradient)
-                                .foregroundColor(.white)
-                                .cornerRadius(10)
-                                .padding(.horizontal)
-                        }
-                    }
-                    .padding(.bottom)
-
+                    
+                    //                    // Edit Button
+                    //                    Button(action: {
+                    //                        isEditing.toggle()
+                    //                        if !isEditing {
+                    //                            // Save the changes when finished editing
+                    //                            saveChanges()
+                    //                        }
+                    //                    }) {
+                    //                        Text(isEditing ? "Save" : "Edit Profile")
+                    //                            .font(.headline)
+                    //                            .padding()
+                    //                            .frame(maxWidth: .infinity)
+                    //                            .background(accentColor)
+                    //                            .foregroundColor(.white)
+                    //                            .cornerRadius(10)
+                    //                            .padding(.horizontal)
+                    //                    }
+                    //                    if isEditing{
+                    //                        Button {
+                    //                            isEditing = false
+                    //                        } label: {
+                    //                            Text("Cancel")
+                    //                                .font(.headline)
+                    //                                .foregroundStyle(Color(.red))
+                    //                                .padding()
+                    //                        }
+                    //                    }
+                    
                 }
                 .padding()
+                .background(Color.customBlack)
+                .cornerRadius(15)
+                .shadow(color: .gray.opacity(0.2), radius: 10, x: 0, y: 5)
+                .padding()
+                .navigationTitle(isUser ? "Your Profile" : "\(vm.user?.name ?? "User")'s Profile")
+                .navigationBarTitleDisplayMode(.inline)
+                .alert(isPresented: $vm.showAlert) {
+                    Alert(title: Text(vm.alertTitle))
+                }
+                .onAppear{
+                    try? vm.loadCurrentUser()
+                }
+                
             }
             
+            //Editing Views
+            switch editingOption {
+            case .EditingName:
+                changeNameView
+            case .EditiingPreferences:
+                userInterestsSection
+            case nil:
+                Text("")
+            }
             if vm.isLoading {
                 Color.black.opacity(0.8).ignoresSafeArea()
                 VStack {
@@ -315,20 +274,46 @@ struct ProfileView: View {
                 }
             }
         }
-            
-            
-              
+        .overlay(alignment: .bottom, content: {
+            if editingOption == nil{
+                Button {
+                    vm.logOut()
+                    isUserCurrentlyLogOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
+                } label: {
+                    Text("サインアウトする")
+                        .font(.headline)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(.red)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                        .padding()
+                        .shadow(radius: 20)
+                }
+            }
+        })
+        .navigationBarBackButtonHidden(editingOption != nil ? true : false)
     }
     
     // Displaying selected preferences when not editing
     private var preferencesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Preferences")
-                .font(.headline)
-                .foregroundColor(accentColor)
-                .padding(.bottom, 4)
+            HStack{
+                Text("Preferences")
+                    .font(.headline)
+                    .foregroundColor(accentColor)
+                    .padding(.bottom, 4)
+                Spacer()
+                Button {
+                    editingOption = .EditiingPreferences
+                } label: {
+                    Image(systemName: "pencil")
+                        .font(.title2)
+                        .foregroundStyle(Color(.systemGray))
+                }
+
+            }
             
-            ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(vm.user?.preferences ?? [], id: \.self) { preference in
                         HStack {
@@ -342,8 +327,6 @@ struct ProfileView: View {
                         .padding(.vertical, 4) // Add vertical padding to each item
                     }
                 }
-            }
-            .frame(maxWidth: .infinity)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
@@ -354,32 +337,59 @@ struct ProfileView: View {
     
     // Editable interests section using the existing userInterestsSection
     private var userInterestsSection: some View {
-        VStack(spacing: 20) {
-            ScrollView {
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 20) {
-                    ForEach(interests, id: \.self) { interest in
-                        Button {
-                            if vm.preferenceIsSelected(interest) {
-                                Task{
-                                    await vm.removePreference(interest: interest)
+        ZStack{
+            Color.customBlack.ignoresSafeArea()
+            VStack(spacing: 20) {
+                ScrollView {
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 20) {
+                        ForEach(interests, id: \.self) { interest in
+                            Button {
+                                if vm.preferenceIsSelected(interest) {
+                                    Task{
+                                        await vm.removePreference(interest: interest)
+                                    }
+                                } else {
+                                    Task{
+                                        await vm.addPreference(interest: interest)
+                                    }
                                 }
-                            } else {
-                                Task{
-                                    await vm.addPreference(interest: interest)
-                                }
+                            } label: {
+                                Text(interest)
+                                    .font(.headline)
+                                    .foregroundColor(vm.preferenceIsSelected(interest) ? .white : .customOrange)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(vm.preferenceIsSelected(interest) ? Color.customOrange : Color.white)
+                                    .cornerRadius(10)
                             }
-                        } label: {
-                            Text(interest)
-                                .font(.headline)
-                                .foregroundColor(vm.preferenceIsSelected(interest) ? .white : .customOrange)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(vm.preferenceIsSelected(interest) ? Color.customOrange : Color.white)
-                                .cornerRadius(10)
                         }
                     }
                 }
+                .padding(.bottom,100)
             }
+            VStack{
+                Spacer()
+                ZStack{
+                    Color.customBlack.ignoresSafeArea()
+                    Button {
+                        editingOption = nil
+                    } label: {
+                        Text("戻る")
+                            .font(.headline)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(accentColor)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                            .padding()
+                            .shadow(radius: 20)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 100)
+                
+            }
+
         }
     }
 
@@ -401,7 +411,7 @@ struct ProfileView: View {
             Task{
                 await vm.updateName()
                 DispatchQueue.main.async {
-                    isEditingName = false
+                    editingOption = nil
                 }
             }
             
@@ -438,7 +448,7 @@ extension ProfileView{
                     .clipShape(Circle())
                     .overlay(
                         Circle()
-                            .stroke(Color(.customBlack), lineWidth: 4)
+                            .stroke(Color(.white), lineWidth: 4)
                     )
                     .shadow(color: .gray.opacity(0.4), radius: 10, x: 0, y: 5)
             } placeholder: {
@@ -449,6 +459,65 @@ extension ProfileView{
                     .clipShape(Circle())
             }
             
+        }
+    }
+}
+
+// MARK:- editor Views
+extension ProfileView{
+    private var changeNameView:some View{
+        ZStack{
+            Color.black.opacity(0.9).ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation {
+                        editingOption = nil
+                    }
+                }
+            VStack{
+                Spacer()
+                Text("新しい名前を入力してください")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(Color.customWhite)
+                
+                TextField("ここに名前を入力...", text: $vm.newName)
+                    .font(.headline)
+                    .frame(height: 55)
+                    .padding(.horizontal)
+                    .background(.white)
+                    .cornerRadius(10)
+                
+                Spacer()
+                VStack{
+                    Button {
+                        saveNewName()
+                    } label: {
+                        Text("保存")
+                            .font(.headline)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(.blue.gradient)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                            .padding(.horizontal)
+                    }
+                    Button {
+                        editingOption = nil
+                    } label: {
+                        Text("キャンセル")
+                            .font(.headline)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(.red.gradient)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                            .padding(.horizontal)
+                    }
+                }
+                .padding(.bottom)
+
+            }
+            .padding()
         }
     }
 }
@@ -464,6 +533,6 @@ let interests = [
 
 #Preview {
     NavigationStack{
-        ProfileView(isUser: true)
+        ProfileView(isUserCurrentlyLogOut: .constant(false), isUser: true)
     }
 }

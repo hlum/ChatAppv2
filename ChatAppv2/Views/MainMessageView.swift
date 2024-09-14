@@ -109,7 +109,7 @@ struct MainMessageView: View {
             
             VStack{
                 NavigationLink {
-                    ProfileView(isUser: true)
+                    ProfileView(isUserCurrentlyLogOut: $vm.isUserCurrentlyLoggedOut, isUser: true)
                 } label: {
                     customNavBar
                         .foregroundStyle(Color(.black))
