@@ -37,13 +37,14 @@ class ChatLogViewModel: ObservableObject {
     @MainActor
     func initialize() async {
         isLoading = true
-        defer { isLoading = false }
+        
         
         await fetchCurrentDBUser()
         if currentUserDB != nil {
             fetchMessages()
             fetchLastReadMessage()
             markAllMessagesAsRead()
+            isLoading = false
         }
     }
 

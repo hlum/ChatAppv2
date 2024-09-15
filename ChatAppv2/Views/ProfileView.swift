@@ -167,9 +167,9 @@ struct ProfileView: View {
                             Task{
                                 await vm.loadTransferableImage()
                             }
+
                         }
                     
-                    // Editable Name
                     Text(vm.user?.name ?? "Error" )
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.white)
@@ -180,55 +180,23 @@ struct ProfileView: View {
                         }
                     
                     // User Email
-                    if !isEditing{
                         if let email = vm.user?.email {
                             Text(email)
                                 .font(.subheadline)
                                 .foregroundColor(subtitleColor)
                         }
-                    }
                     
                     // User Age
-                    if !isEditing{
                         if let age = vm.user?.age {
                             Text("Age: \(Int(age))")
                                 .font(.subheadline)
                                 .foregroundColor(subtitleColor)
                         }
-                    }
                     
-                    // Editable Preferences Section
                     preferencesSection
                     
                     Spacer()
                     
-                    //                    // Edit Button
-                    //                    Button(action: {
-                    //                        isEditing.toggle()
-                    //                        if !isEditing {
-                    //                            // Save the changes when finished editing
-                    //                            saveChanges()
-                    //                        }
-                    //                    }) {
-                    //                        Text(isEditing ? "Save" : "Edit Profile")
-                    //                            .font(.headline)
-                    //                            .padding()
-                    //                            .frame(maxWidth: .infinity)
-                    //                            .background(accentColor)
-                    //                            .foregroundColor(.white)
-                    //                            .cornerRadius(10)
-                    //                            .padding(.horizontal)
-                    //                    }
-                    //                    if isEditing{
-                    //                        Button {
-                    //                            isEditing = false
-                    //                        } label: {
-                    //                            Text("Cancel")
-                    //                                .font(.headline)
-                    //                                .foregroundStyle(Color(.red))
-                    //                                .padding()
-                    //                        }
-                    //                    }
                     
                 }
                 .padding()
@@ -275,7 +243,7 @@ struct ProfileView: View {
             }
         }
         .overlay(alignment: .bottom, content: {
-            if editingOption == nil{
+            if editingOption == nil && !vm.isLoading {
                 Button {
                     vm.logOut()
                     isUserCurrentlyLogOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
@@ -292,8 +260,7 @@ struct ProfileView: View {
                 }
             }
         })
-        .navigationBarBackButtonHidden(editingOption != nil ? true : false)
-    }
+        .navigationBarBackButtonHidden(editingOption != nil || vm.isLoading ? true : false)    }
     
     // Displaying selected preferences when not editing
     private var preferencesSection: some View {
@@ -309,7 +276,7 @@ struct ProfileView: View {
                 } label: {
                     Image(systemName: "pencil")
                         .font(.title2)
-                        .foregroundStyle(Color(.systemGray))
+                        .foregroundStyle(Color(.blue))
                 }
 
             }
