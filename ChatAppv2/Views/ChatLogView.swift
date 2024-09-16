@@ -173,7 +173,6 @@ class ChatLogViewModel: ObservableObject {
         // Only update if more than 1 second has passed since the last update
         if now - lastUpdateTimestamp > 0.009 {
             lastUpdateTimestamp = now
-            print("Test RUN")
             Task {
                 await UserManager.shared.updateLastReadMessageId(userId: userId, chatPartnerId: chatPartnerId, lastMessageId: chatMessages.last?.documentId ?? "")
             }
@@ -189,7 +188,7 @@ class ChatLogViewModel: ObservableObject {
          }
          
     
-        self.listenerToLastReadMessageId = UserManager.shared.getLastReadMessageId(userId: currentUserId, chatPartnerId: recipientId, completion: { lastReadMessageId in
+        self.listenerToLastReadMessageId = UserManager.shared.getLastReadMessageId(userId: currentUserId, chatPartnerId: recipientId, completion: { lastReadMessageId,_  in
             DispatchQueue.main.async {
                 self.lastReadMessageId = lastReadMessageId
             }
@@ -260,26 +259,33 @@ extension ChatLogView{
                                     .clipShape(Circle())
                                     .overlay(Circle().stroke(Color.white, lineWidth: 1))
                                     .offset(x: 10, y: 10)
-                                    .padding()
+                                    .padding(.horizontal)
                             }
                         }
                     }
                     // Spacer to push content upwards
-                    HStack { Spacer() }
-                        .id("Empty") // This id ensures scrolling to the bottom
-                        .padding(.bottom, 20)
+                    HStack {
+                        Spacer()
+                    }
+                    .padding(.bottom)
+                    .id("Empty") // This id ensures scrolling to the bottom
                 }
                 .onChange(of: vm.chatMessages.count) { _, _ in
                     // Scroll to the bottom whenever the message count changes
-                    withAnimation {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { // slight delay
                         vm.updateLastReadMessageId()
-                        scrollViewProxy.scrollTo("Empty", anchor: .bottom)
+                        withAnimation {
+                            scrollViewProxy.scrollTo("Empty", anchor: .bottom)
+                        }
                     }
                 }
                 // Scroll on appear as well to ensure we start from the bottom
+                
                 .onAppear {
-                    if !vm.chatMessages.isEmpty {
-                        scrollViewProxy.scrollTo("Empty", anchor: .bottom)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { // slight delay
+                        if !vm.chatMessages.isEmpty {
+                            scrollViewProxy.scrollTo("Empty", anchor: .bottom)
+                        }
                     }
                 }
             }

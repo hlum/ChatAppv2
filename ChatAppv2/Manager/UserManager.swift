@@ -57,7 +57,7 @@ final class UserManager{
             //upload the image data
             _ = try await reference.putDataAsync(data, metadata: nil) { progress in
                 guard let progress = progress else { return }
-                let percentComplete = 100.0 * Double(progress.completedUnitCount) / Double(progress.totalUnitCount)
+                _ = 100.0 * Double(progress.completedUnitCount) / Double(progress.totalUnitCount)
             }
             
             
@@ -278,7 +278,7 @@ extension UserManager{
     }
     
     
-    func getLastReadMessageId(userId:String,chatPartnerId:String,completion:@escaping (String) -> Void)  -> ListenerRegistration{
+    func getLastReadMessageId(userId:String,chatPartnerId:String,completion:@escaping (_ userLastReadMessageId:String,_ chatPartnerLastReadMessageId:String) -> Void)  -> ListenerRegistration{
         let documentId = IdGenerator.shared.generateUnionId(userId, chatPartnerId)
         let lastReadMessageReference = lastReadMessagesCollection
             .document(documentId)
@@ -288,18 +288,15 @@ extension UserManager{
                 print("Can't get snapshot \(error.localizedDescription)")
                 return
             }
-            
-            
             guard let snapshot = DocumentSnapshot,
                   let data = snapshot.data() else{
                 print("UserManager/getLastReadMessageId: Can't get snapshot or data")
                 return
             }
-            completion(data["\(FirebaseConstants.lastReadMessageId + userId)"] as? String ?? "")
+            let userLastReadMessageId = data["\(FirebaseConstants.lastReadMessageId + userId)"] as? String ?? ""
+            let chatPartnerLastReadMessageId = data["\(FirebaseConstants.lastReadMessageId + chatPartnerId)"] as? String ?? ""
+            completion(userLastReadMessageId,chatPartnerLastReadMessageId)
         }
-
-        
-        
     }
 
 }

@@ -10,9 +10,12 @@ class MainViewMessageViewModel:ObservableObject{
     @Published var showNewMessageView:Bool = false
     @Published var selectedRecipient:DBUser? = nil
     @Published var recentMessages: [MessageModel] = []
+    
+    
     @Published var messageIsSeen:Bool = false
     
     private var messagesListener:ListenerRegistration?
+    private var lastReadMessageIdListener:ListenerRegistration?
     
     
     
@@ -21,20 +24,6 @@ class MainViewMessageViewModel:ObservableObject{
         }
     
 #warning("fixed this later")
-//    @MainActor
-//    func fetchLastReadMessageId() async {
-//        for recentMessage in recentMessages {
-//            <#body#>
-//        }
-//         guard let currentUserId = currentUserDB?.userId,
-//               
-//        else {
-//             return
-//         }
-//         
-//    
-//            self.lastReadMessageId = await UserManager.shared.getLastReadMessageId(userId: recipientId, chatPartnerId: currentUserId)
-//     }
 
     
     func fetchUserData()async {
@@ -87,7 +76,24 @@ class MainViewMessageViewModel:ObservableObject{
                         }
                         let messageData = change.document.data()
                         let recentMessage = MessageModel(documentId: docId, data: messageData)
+                        if recentMessage.fromId != userId {
+                            self.messageIsSeen = true
+                        }
+                        if recentMessage.toId == userId{
+                            self.lastReadMessageIdListener = UserManager.shared.getLastReadMessageId(userId: userId, chatPartnerId: recentMessage.fromId) { _,chatPartnerLastReadMessageId  in
+                                print("last read message id: \(chatPartnerLastReadMessageId)")
+                                print("recent message id: \(messageData["document_id"] as? String ?? "")")
+                                if messageData["document_id"] as? String ?? "" == chatPartnerLastReadMessageId {
+                                    self.messageIsSeen = true
+                                    print("message is seen")
+                                } else {
+                                    self.messageIsSeen = false
+                                    print("message is not seen")
+                                }
+                            }
+                        }
                         self.recentMessages.insert(recentMessage, at: 0)
+                        
                     }
                     
                     if change.type == .removed {
@@ -112,6 +118,7 @@ class MainViewMessageViewModel:ObservableObject{
     
     func cancelListeners() {
         messagesListener?.remove()
+        lastReadMessageIdListener?.remove()
     }
     
     deinit {
@@ -285,7 +292,7 @@ extension MainMessageView{
                              Circle()
                                  .fill(Color.blue)
                                  .frame(width: 10, height: 10)
-                                 .opacity(vm.messageIsSeen ? 1 : 0)
+                                 .opacity(vm.messageIsSeen ? 0 : 1)
                         }
                         .padding(.trailing)
                     }
@@ -313,7 +320,7 @@ extension MainMessageView{
             .padding(.vertical)
             .background(.blue)
             .cornerRadius(32)
-            .padding(.horizontal)
+            .padding()
             .shadow(radius: 15)
         }
         .fullScreenCover(isPresented: $vm.showNewMessageView) {
