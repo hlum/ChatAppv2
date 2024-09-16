@@ -12,7 +12,7 @@ class MainViewMessageViewModel:ObservableObject{
     @Published var recentMessages: [MessageModel] = []
     
     
-    @Published var messageIsSeen:Bool = false
+    @Published var messageIsSeen:Bool = true
     
     private var messagesListener:ListenerRegistration?
     private var lastReadMessageIdListener:ListenerRegistration?
@@ -22,8 +22,6 @@ class MainViewMessageViewModel:ObservableObject{
     init(){
         self.isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
         }
-    
-#warning("fixed this later")
 
     
     func fetchUserData()async {
@@ -176,24 +174,30 @@ extension MainMessageView{
     
     private var customNavBar:some View{
         HStack{
-            WebImage(url: URL(string: vm.currentUserDB?.photoUrl ?? "NO Image url found")) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width:50,height: 50)
-                    .clipped()
-                    .cornerRadius(50)
-                    .overlay(RoundedRectangle(cornerRadius: 44)
-                        .stroke(Color(.label),lineWidth: 1)
-                    )
-                    .shadow(radius: 5)
-            } placeholder: {
-                Image(.profilePic)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 60,height: 60)
-                    .padding()
+            
+            if let currentUser = vm.currentUserDB ,
+               let urlString = currentUser.photoUrl
+            {
+                WebImage(url: URL(string: urlString)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width:50,height: 50)
+                            .clipped()
+                            .cornerRadius(50)
+                            .overlay(RoundedRectangle(cornerRadius: 44)
+                                .stroke(Color(.label),lineWidth: 1)
+                            )
+                            .shadow(radius: 5)
+                    } placeholder: {
+                        Image(.profilePic)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 60,height: 60)
+                            .padding()
+                    }
             }
+
 
             VStack(alignment:.leading,spacing: 4){
                 let name = vm.currentUserDB?.name ?? "........"
