@@ -20,19 +20,22 @@ class ChatLogViewModel: ObservableObject {
     private var messagesDictionary: [String: MessageModel] = [:]
     
     @Published var textFieldText: String = ""
-    
     let recipient: DBUser?
-    
-    
+
     private var messagesListener: ListenerRegistration?
-    private var listenerToLastReadMessageId :ListenerRegistration?
-    
+    private var listenerToLastReadMessageId: ListenerRegistration?
+
     @Published var isLoading: Bool = false
     
+    private var lastUpdateTimestamp: TimeInterval = 0
+
+
+
+
     init(recipient: DBUser) {
         self.recipient = recipient
     }
-    
+
     @MainActor
     func initialize() async {
         isLoading = true
@@ -40,23 +43,13 @@ class ChatLogViewModel: ObservableObject {
         await fetchCurrentDBUser()
         if currentUserDB != nil {
             fetchMessages()
-            
             startListeningToLastReadMessageId()
             
+
             Task {
                 await waitForMessages()
-                
-                guard let currentUserDB = currentUserDB,
-                      !chatMessages.isEmpty else{
-                    return
-                }
-                if currentUserDB.userId != chatMessages.last?.fromId {
-                    markAllMessagesAsRead()
-                }
-                
-                
+                updateLastReadMessageId()
             }
-            
             isLoading = false
         }
     }
@@ -135,13 +128,12 @@ class ChatLogViewModel: ObservableObject {
             return
         }
 
-        messagesListener = UserManager.shared.getMessages(fromId: fromId, toId: toId) { [weak self] message,changeType in
+        messagesListener = UserManager.shared.getMessages(fromId: fromId, toId: toId) {
+            [weak self] message,
+            changeType in
             guard let self = self else { return }
             DispatchQueue.main.async {
                 self.handleMessageChanges(message: message, changeType: changeType)
-                if fromId != message.fromId{
-                    self.markAllMessagesAsRead()
-                }
             }
 
         }
@@ -165,23 +157,29 @@ class ChatLogViewModel: ObservableObject {
         
         self.chatMessages = updateMessages
     }
-    
-    func markAllMessagesAsRead(){
+
+    func updateLastReadMessageId() {
         guard let userId = currentUserDB?.userId,
-              let chatPartnerId = recipient?.userId
-        else{
+              let chatPartnerId = recipient?.userId else {
             print("Can't get the userId or chatPartnerId")
             return
         }
-        guard !chatMessages.isEmpty else{
+        guard !chatMessages.isEmpty else {
             print("No chatMessages found")
             return
         }
-        print("Test RUN")
-        Task{
-            await UserManager.shared.markAllMessagesAsRead(userId: userId, chatPartnerId: chatPartnerId, lastMessageId: chatMessages.last?.documentId ?? "")
+
+        let now = Date().timeIntervalSince1970
+        // Only update if more than 1 second has passed since the last update
+        if now - lastUpdateTimestamp > 0.009 {
+            lastUpdateTimestamp = now
+            print("Test RUN")
+            Task {
+                await UserManager.shared.updateLastReadMessageId(userId: userId, chatPartnerId: chatPartnerId, lastMessageId: chatMessages.last?.documentId ?? "")
+            }
         }
     }
+    
     
     @MainActor
     func startListeningToLastReadMessageId() {
@@ -249,11 +247,12 @@ extension ChatLogView{
                 LazyVStack {
                     ForEach(vm.chatMessages) { message in
                         MessageView(message: message, isFromCurrentUser: message.fromId == vm.currentUserDB?.userId)
-                        HStack{
-                            Spacer()
-                            if message.documentId == vm.lastReadMessageId &&
-                                message.fromId == vm.currentUserDB?.userId
-                            {
+                        
+                        // Check if this is the last message and show the last-read indicator
+                        if message.documentId == vm.lastReadMessageId &&
+                           message.fromId == vm.currentUserDB?.userId {
+                            HStack {
+                                Spacer()
                                 WebImage(url: URL(string: vm.recipient?.photoUrl ?? ""))
                                     .resizable()
                                     .scaledToFill()
@@ -265,18 +264,24 @@ extension ChatLogView{
                             }
                         }
                     }
-                    HStack{ Spacer() }
-                        .padding(.bottom,20)
-                        .id("Empty")
-
-                        .onChange(of: vm.chatMessages.count) { _ , _ in
-                            // Scroll to the bottom whenever a new message is added
-                            withAnimation {
-                                scrollViewProxy.scrollTo("Empty", anchor: .bottom)
-                            }
-                        }
+                    // Spacer to push content upwards
+                    HStack { Spacer() }
+                        .id("Empty") // This id ensures scrolling to the bottom
+                        .padding(.bottom, 20)
                 }
-                
+                .onChange(of: vm.chatMessages.count) { _, _ in
+                    // Scroll to the bottom whenever the message count changes
+                    withAnimation {
+                        vm.updateLastReadMessageId()
+                        scrollViewProxy.scrollTo("Empty", anchor: .bottom)
+                    }
+                }
+                // Scroll on appear as well to ensure we start from the bottom
+                .onAppear {
+                    if !vm.chatMessages.isEmpty {
+                        scrollViewProxy.scrollTo("Empty", anchor: .bottom)
+                    }
+                }
             }
         }
     }

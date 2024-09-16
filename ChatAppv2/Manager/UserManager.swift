@@ -263,7 +263,7 @@ extension UserManager{
     
 
     
-    func markAllMessagesAsRead(userId:String,chatPartnerId:String,lastMessageId:String) async{
+    func updateLastReadMessageId(userId:String,chatPartnerId:String,lastMessageId:String) async{
         let documentId = IdGenerator.shared.generateUnionId(userId, chatPartnerId)
         let lastReadMessageReference = lastReadMessagesCollection
             .document(documentId)
