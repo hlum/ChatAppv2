@@ -16,7 +16,7 @@ class ChatLogViewModel: ObservableObject {
     @Published var currentUserDB: DBUser? = nil
     @Published var chatMessages: [MessageModel] = []
     
-    @Published var lastReadMessageId: String? = nil
+    @Published var lastReadMessageId: String = ""
     private var messagesDictionary: [String: MessageModel] = [:]
     
     @Published var textFieldText: String = ""
@@ -25,7 +25,7 @@ class ChatLogViewModel: ObservableObject {
     
     
     private var messagesListener: ListenerRegistration?
-    private var lastReadListener: ListenerRegistration?
+    private var listenerToLastReadMessageId :ListenerRegistration?
     
     @Published var isLoading: Bool = false
     
@@ -33,21 +33,41 @@ class ChatLogViewModel: ObservableObject {
         self.recipient = recipient
     }
     
-    
     @MainActor
     func initialize() async {
         isLoading = true
-        
-        
+
         await fetchCurrentDBUser()
         if currentUserDB != nil {
             fetchMessages()
-            fetchLastReadMessage()
-            markAllMessagesAsRead()
+            
+            startListeningToLastReadMessageId()
+            
+            Task {
+                await waitForMessages()
+                
+                guard let currentUserDB = currentUserDB,
+                      !chatMessages.isEmpty else{
+                    return
+                }
+                if currentUserDB.userId != chatMessages.last?.fromId {
+                    markAllMessagesAsRead()
+                }
+                
+                
+            }
+            
             isLoading = false
         }
     }
 
+    func waitForMessages() async {
+        // This loop waits until the chatMessages array is populated
+        while chatMessages.isEmpty {
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 second delay
+        }
+    }
+    
     
     func fetchCurrentDBUser() async {
         let currentUser = try? AuthenticationManager.shared.getAuthenticatedUser()
@@ -61,8 +81,6 @@ class ChatLogViewModel: ObservableObject {
             await MainActor.run {
                 self.currentUserDB = user
             }
-            
-            self.fetchMessages()
             
         } catch {
             print("Error fetching current user: \(error)")
@@ -94,8 +112,7 @@ class ChatLogViewModel: ObservableObject {
             FirebaseConstants.senderEmail : currentUserDB?.email ?? "",
             FirebaseConstants.senderProfileUrl:currentUserDB?.photoUrl ?? "Chat log : No image url",
             FirebaseConstants.senderName : currentUserDB?.name ?? "Can't get sendername messageLogView/sendmessage",
-            FirebaseConstants.recieverName:recipient?.name ?? "Can't get recievername messageLogView/sendmessage",
-            FirebaseConstants.isUnread : false
+            FirebaseConstants.recieverName:recipient?.name ?? "Can't get recievername messageLogView/sendmessage"
         ] as [String : Any]
         
         let message = MessageModel(documentId: "",id:"" , data: messageData)
@@ -106,7 +123,7 @@ class ChatLogViewModel: ObservableObject {
         }
     }
     
-    func fetchMessages() {
+    func fetchMessages(){
         guard let fromId = self.currentUserDB?.userId else {
             print("ChatLogViewModel/fetchMessages: Can't get current user id")
             return
@@ -122,11 +139,15 @@ class ChatLogViewModel: ObservableObject {
             guard let self = self else { return }
             DispatchQueue.main.async {
                 self.handleMessageChanges(message: message, changeType: changeType)
-                self.markMessageAsRead(message: message)
+                if fromId != message.fromId{
+                    self.markAllMessagesAsRead()
+                }
             }
+
         }
     }
     
+    @MainActor
     func handleMessageChanges(message:MessageModel,changeType:DocumentChangeType){
         let key = message.documentId
         
@@ -145,54 +166,42 @@ class ChatLogViewModel: ObservableObject {
         self.chatMessages = updateMessages
     }
     
-    func markMessageAsRead(message: MessageModel) {
-        guard let currentUserId = currentUserDB?.userId,
-              message.toId == currentUserId,
-              message.isUnread else {
+    func markAllMessagesAsRead(){
+        guard let userId = currentUserDB?.userId,
+              let chatPartnerId = recipient?.userId
+        else{
+            print("Can't get the userId or chatPartnerId")
             return
         }
-
-        Task {
-            do {
-                try await UserManager.shared.markMessageAsRead(userId: currentUserId, chatPartnerId: message.fromId, messageId: message.documentId)
-            } catch {
-                print("Error marking message as read: \(error.localizedDescription)")
-            }
-        }
-    }
-
-    func markAllMessagesAsRead() {
-        guard let currentUserId = currentUserDB?.userId,
-              let chatPartnerId = recipient?.userId else {
+        guard !chatMessages.isEmpty else{
+            print("No chatMessages found")
             return
         }
-
-        Task {
-            do {
-                try await UserManager.shared.markAllMessagesAsRead(userId: currentUserId, chatPartnerId: chatPartnerId)
-            } catch {
-                print("Error marking all messages as read: \(error.localizedDescription)")
-            }
+        print("Test RUN")
+        Task{
+            await UserManager.shared.markAllMessagesAsRead(userId: userId, chatPartnerId: chatPartnerId, lastMessageId: chatMessages.last?.documentId ?? "")
         }
     }
     
-    func fetchLastReadMessage() {
+    @MainActor
+    func startListeningToLastReadMessageId() {
          guard let currentUserId = currentUserDB?.userId,
                let recipientId = recipient?.userId else {
              return
          }
          
-         lastReadListener = UserManager.shared.getLastReadMessage(userId: recipientId, chatPartnerId: currentUserId) { [weak self] lastReadMessageId in
-             DispatchQueue.main.async {
-                 self?.lastReadMessageId = lastReadMessageId
-             }
-         }
+    
+        self.listenerToLastReadMessageId = UserManager.shared.getLastReadMessageId(userId: currentUserId, chatPartnerId: recipientId, completion: { lastReadMessageId in
+            DispatchQueue.main.async {
+                self.lastReadMessageId = lastReadMessageId
+            }
+        })
      }
 
     
     func cancelListeners() {
         messagesListener?.remove()
-        lastReadListener?.remove()
+        listenerToLastReadMessageId?.remove()
     }
 
     deinit {
@@ -257,7 +266,9 @@ extension ChatLogView{
                         }
                     }
                     HStack{ Spacer() }
+                        .padding(.bottom,20)
                         .id("Empty")
+
                         .onChange(of: vm.chatMessages.count) { _ , _ in
                             // Scroll to the bottom whenever a new message is added
                             withAnimation {

@@ -5,11 +5,12 @@ import SDWebImageSwiftUI
 
 class MainViewMessageViewModel:ObservableObject{
     @Published var showLogOutOption : Bool = false
-    @Published var chatUser : DBUser? = nil // currentUser
+    @Published var currentUserDB : DBUser? = nil // currentUser
     @Published var isUserCurrentlyLoggedOut:Bool = true
     @Published var showNewMessageView:Bool = false
     @Published var selectedRecipient:DBUser? = nil
     @Published var recentMessages: [MessageModel] = []
+    @Published var messageIsSeen:Bool = false
     
     private var messagesListener:ListenerRegistration?
     
@@ -18,6 +19,23 @@ class MainViewMessageViewModel:ObservableObject{
     init(){
         self.isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
         }
+    
+#warning("fixed this later")
+//    @MainActor
+//    func fetchLastReadMessageId() async {
+//        for recentMessage in recentMessages {
+//            <#body#>
+//        }
+//         guard let currentUserId = currentUserDB?.userId,
+//               
+//        else {
+//             return
+//         }
+//         
+//    
+//            self.lastReadMessageId = await UserManager.shared.getLastReadMessageId(userId: recipientId, chatPartnerId: currentUserId)
+//     }
+
     
     func fetchUserData()async {
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser()else {
@@ -28,14 +46,14 @@ class MainViewMessageViewModel:ObservableObject{
             let user = try? await UserManager.shared.getUser(userId: authDataResult.uid)
             
             DispatchQueue.main.async{
-                self.chatUser = user
+                self.currentUserDB = user
             }
     }
     
     func logOut(){
         AuthenticationManager.shared.signOut()
         self.recentMessages = []
-        self.chatUser = nil
+        self.currentUserDB = nil
     }
     
     
@@ -151,7 +169,7 @@ extension MainMessageView{
     
     private var customNavBar:some View{
         HStack{
-            WebImage(url: URL(string: vm.chatUser?.photoUrl ?? "NO Image url found")) { image in
+            WebImage(url: URL(string: vm.currentUserDB?.photoUrl ?? "NO Image url found")) { image in
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -171,7 +189,7 @@ extension MainMessageView{
             }
 
             VStack(alignment:.leading,spacing: 4){
-                let name = vm.chatUser?.name ?? "........"
+                let name = vm.currentUserDB?.name ?? "........"
                 Text(name)
                     .font(.system(size: 24,weight:.bold))
                 
@@ -222,7 +240,7 @@ extension MainMessageView{
             
             VStack{
 
-                NavigationLink(value: DBUser(recentMessage: recentMessage, currentUser: vm.chatUser ?? DBUser(userId:""))) {
+                NavigationLink(value: DBUser(recentMessage: recentMessage, currentUser: vm.currentUserDB ?? DBUser(userId:""))) {
                     
                     HStack(spacing: 10){
                         WebImage(url: URL(string: recentMessage.recipientProfileUrl)) { image in
@@ -267,7 +285,7 @@ extension MainMessageView{
                              Circle()
                                  .fill(Color.blue)
                                  .frame(width: 10, height: 10)
-                                 .opacity(recentMessage.isUnread ? 1 : 0)
+                                 .opacity(vm.messageIsSeen ? 1 : 0)
                         }
                         .padding(.trailing)
                     }
