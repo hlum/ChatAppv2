@@ -212,6 +212,8 @@ class ChatLogViewModel: ObservableObject {
 
 struct ChatLogView:View {
     @StateObject var vm : ChatLogViewModel
+    @FocusState var isFocused: Bool
+
     init(recipient: DBUser) {
             _vm = StateObject(wrappedValue: ChatLogViewModel(recipient: recipient))
         }
@@ -222,6 +224,9 @@ struct ChatLogView:View {
                 ProgressView()
             } else {
                 messagesView
+                    .onTapGesture {
+                        isFocused.toggle()
+                    }
                 ChatBottomBar
             }
 
@@ -297,6 +302,9 @@ extension ChatLogView{
             Image(systemName: "photo.on.rectangle")
                 .font(.title)
             TextField("Description.....", text: $vm.textFieldText,axis: .vertical)
+                .submitLabel(.return)
+                .focused($isFocused)
+
             Button {
                 Task{
                     await vm.sendMessage()
@@ -318,23 +326,3 @@ extension ChatLogView{
 
 
 
-
-struct MessageView: View {
-    let message: MessageModel
-    let isFromCurrentUser: Bool
-    
-    var body: some View {
-        HStack {
-            if isFromCurrentUser { Spacer() }
-            
-            Text(message.text)
-                .padding()
-                .background(isFromCurrentUser ? Color.blue : Color.gray.opacity(0.2))
-                .foregroundColor(isFromCurrentUser ? .white : .black)
-                .cornerRadius(10)
-            
-            if !isFromCurrentUser { Spacer() }
-        }
-        .padding(.horizontal)
-    }
-}
