@@ -30,13 +30,13 @@ struct MessageView: View {
                         image
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 50, height: 50)
+                            .frame(width: 30, height: 30)
                             .clipShape(Circle())
                     } placeholder: {
                         Image(.profilePic)
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 50, height: 50)
+                            .frame(width: 30, height: 30)
                             .clipShape(Circle())
                     }
 

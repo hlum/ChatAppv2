@@ -213,37 +213,115 @@ class ChatLogViewModel: ObservableObject {
 struct ChatLogView:View {
     @StateObject var vm : ChatLogViewModel
     @FocusState var isFocused: Bool
+    @Environment(\.presentationMode) var presentationMode
 
     init(recipient: DBUser) {
             _vm = StateObject(wrappedValue: ChatLogViewModel(recipient: recipient))
         }
     
     var body : some View{
-        VStack{
-            if vm.isLoading {
-                ProgressView()
-            } else {
-                messagesView
-                    .onTapGesture {
-                        isFocused.toggle()
-                    }
-                ChatBottomBar
+        ZStack{
+            VStack(spacing:0){
+                if vm.isLoading {
+                    ProgressView()
+                } else {
+                    
+                    messagesView
+                        .onTapGesture {
+                            isFocused.toggle()
+                        }
+                    
+                    
+                    ChatBottomBar
+                }
+                
             }
-
+            .background(.white)
+            .safeAreaInset(edge: .top) {
+                customNavBar
+                    .shadow(color: Color.black.opacity(0.1), radius: 9, x: 0,y:1)
+            }
+            
+            .task {
+                await vm.initialize()
+            }
+            
+            .onDisappear {
+                vm.cancelListeners()
+            }
+            .toolbar(.hidden)
+            .navigationBarTitleDisplayMode(.inline)
         }
-        .task {
-            await vm.initialize()
-        }
-
-        .onDisappear {
-            vm.cancelListeners()
-        }
-        .navigationTitle(vm.recipient?.name ?? "")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
 extension ChatLogView{
+    private var customNavBar: some View {
+                HStack {
+                    Button {
+                        presentationMode.wrappedValue.dismiss()
+                    } label: {
+                        Image(systemName: "arrow.left")
+                            .font(.title3)
+                            .padding()
+                            .padding(.bottom)
+                    }
+                    
+                    if let recipient = vm.recipient,
+                       let photoUrl = recipient.photoUrl
+                    {
+                        WebImage(url: URL(string: photoUrl)) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 40, height: 40)
+                                .clipped()
+                                .cornerRadius(50)
+                                .overlay(RoundedRectangle(cornerRadius: 44)
+                                    .stroke(Color(.label), lineWidth: 1)
+                                )
+                                .padding(.trailing)
+                                .padding(.bottom)
+                        } placeholder: {
+                            Image(.profilePic)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 40, height: 40)
+                                .padding(.trailing)
+                                .padding(.bottom)
+
+                        }
+                    } else {
+                        Image(.profilePic)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 40, height: 40)
+                            .padding(.trailing)
+                            .padding(.bottom)
+                    }
+                    
+                    VStack(alignment:.leading){
+                        if let recipient = vm.recipient {
+                            Text(recipient.name ?? "")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                            if let email = recipient.email{
+                                let studentId = email
+                                                .replacingOccurrences(of: "@jec.ac.jp", with: "")
+                                                .replacingOccurrences(of: "@gmail.com", with: "")
+                                                                            
+                                Text(studentId)
+                                    .font(.subheadline)
+                                    .foregroundStyle(Color(.label))
+                            }
+                        }
+                    }
+                    .padding(.bottom)
+                    Spacer()
+                }
+                .background(.white)
+    }
+
     
     private var messagesView: some View {
         ScrollView {
