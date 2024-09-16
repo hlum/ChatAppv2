@@ -5,19 +5,26 @@ import SDWebImageSwiftUI
 
 class MainViewMessageViewModel:ObservableObject{
     @Published var showLogOutOption : Bool = false
-    @Published var chatUser : DBUser? = nil // currentUser
+    @Published var currentUserDB : DBUser? = nil // currentUser
     @Published var isUserCurrentlyLoggedOut:Bool = true
     @Published var showNewMessageView:Bool = false
     @Published var selectedRecipient:DBUser? = nil
     @Published var recentMessages: [MessageModel] = []
     
+    
+    @Published var messageIsSeen:Bool = false
+    
     private var messagesListener:ListenerRegistration?
+    private var lastReadMessageIdListener:ListenerRegistration?
     
     
     
     init(){
         self.isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
         }
+    
+#warning("fixed this later")
+
     
     func fetchUserData()async {
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser()else {
@@ -28,14 +35,14 @@ class MainViewMessageViewModel:ObservableObject{
             let user = try? await UserManager.shared.getUser(userId: authDataResult.uid)
             
             DispatchQueue.main.async{
-                self.chatUser = user
+                self.currentUserDB = user
             }
     }
     
     func logOut(){
         AuthenticationManager.shared.signOut()
         self.recentMessages = []
-        self.chatUser = nil
+        self.currentUserDB = nil
     }
     
     
@@ -69,7 +76,24 @@ class MainViewMessageViewModel:ObservableObject{
                         }
                         let messageData = change.document.data()
                         let recentMessage = MessageModel(documentId: docId, data: messageData)
+                        if recentMessage.fromId != userId {
+                            self.messageIsSeen = true
+                        }
+                        if recentMessage.toId == userId{
+                            self.lastReadMessageIdListener = UserManager.shared.getLastReadMessageId(userId: userId, chatPartnerId: recentMessage.fromId) { _,chatPartnerLastReadMessageId  in
+                                print("last read message id: \(chatPartnerLastReadMessageId)")
+                                print("recent message id: \(messageData["document_id"] as? String ?? "")")
+                                if messageData["document_id"] as? String ?? "" == chatPartnerLastReadMessageId {
+                                    self.messageIsSeen = true
+                                    print("message is seen")
+                                } else {
+                                    self.messageIsSeen = false
+                                    print("message is not seen")
+                                }
+                            }
+                        }
                         self.recentMessages.insert(recentMessage, at: 0)
+                        
                     }
                     
                     if change.type == .removed {
@@ -94,6 +118,7 @@ class MainViewMessageViewModel:ObservableObject{
     
     func cancelListeners() {
         messagesListener?.remove()
+        lastReadMessageIdListener?.remove()
     }
     
     deinit {
@@ -151,7 +176,7 @@ extension MainMessageView{
     
     private var customNavBar:some View{
         HStack{
-            WebImage(url: URL(string: vm.chatUser?.photoUrl ?? "NO Image url found")) { image in
+            WebImage(url: URL(string: vm.currentUserDB?.photoUrl ?? "NO Image url found")) { image in
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -171,7 +196,7 @@ extension MainMessageView{
             }
 
             VStack(alignment:.leading,spacing: 4){
-                let name = vm.chatUser?.name ?? "........"
+                let name = vm.currentUserDB?.name ?? "........"
                 Text(name)
                     .font(.system(size: 24,weight:.bold))
                 
@@ -222,7 +247,7 @@ extension MainMessageView{
             
             VStack{
 
-                NavigationLink(value: DBUser(recentMessage: recentMessage, currentUser: vm.chatUser ?? DBUser(userId:""))) {
+                NavigationLink(value: DBUser(recentMessage: recentMessage, currentUser: vm.currentUserDB ?? DBUser(userId:""))) {
                     
                     HStack(spacing: 10){
                         WebImage(url: URL(string: recentMessage.recipientProfileUrl)) { image in
@@ -267,7 +292,7 @@ extension MainMessageView{
                              Circle()
                                  .fill(Color.blue)
                                  .frame(width: 10, height: 10)
-                                 .opacity(recentMessage.isUnread ? 1 : 0)
+                                 .opacity(vm.messageIsSeen ? 0 : 1)
                         }
                         .padding(.trailing)
                     }
@@ -295,7 +320,7 @@ extension MainMessageView{
             .padding(.vertical)
             .background(.blue)
             .cornerRadius(32)
-            .padding(.horizontal)
+            .padding()
             .shadow(radius: 15)
         }
         .fullScreenCover(isPresented: $vm.showNewMessageView) {
