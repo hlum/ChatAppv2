@@ -12,7 +12,7 @@ class MainViewMessageViewModel:ObservableObject{
     @Published var recentMessages: [MessageModel] = []
     
     
-    @Published var messageIsSeen:Bool = true
+
     
     private var messagesListener:ListenerRegistration?
     private var lastReadMessageIdListener:ListenerRegistration?
@@ -45,15 +45,14 @@ class MainViewMessageViewModel:ObservableObject{
     
     
     func fetchRecentMessages() {
-        guard let userId = try? AuthenticationManager.shared.getAuthenticatedUser().uid
-        else {
+        guard let userId = try? AuthenticationManager.shared.getAuthenticatedUser().uid else {
             return
         }
         
         messagesListener = UserManager.shared.recentMessagesCollection
             .document(userId)
             .collection("messages")
-            .order(by: FirebaseConstants.dateCreated, descending: false)
+            .order(by: FirebaseConstants.dateCreated, descending: true)  // Use timestamp and descending order
             .addSnapshotListener { [weak self] querySnapshot, error in
                 
                 guard let self = self else { return }
@@ -65,42 +64,61 @@ class MainViewMessageViewModel:ObservableObject{
                 
                 guard let changes = querySnapshot?.documentChanges else { return }
                 
-                changes.forEach { change in
+                for change in changes {
                     let docId = change.document.documentID
-                    
-                    if change.type == .added || change.type == .modified {
-                        if let index = self.recentMessages.firstIndex(where: { $0.documentId == docId }) {
-                            self.recentMessages.remove(at: index)
-                        }
-                        let messageData = change.document.data()
-                        let recentMessage = MessageModel(documentId: docId, data: messageData)
-                        if recentMessage.fromId != userId {
-                            self.messageIsSeen = true
-                        }
-                        if recentMessage.toId == userId{
-                            self.lastReadMessageIdListener = UserManager.shared.getLastReadMessageId(userId: userId, chatPartnerId: recentMessage.fromId) { _,chatPartnerLastReadMessageId  in
-                                if messageData["document_id"] as? String ?? "" == chatPartnerLastReadMessageId {
-                                    self.messageIsSeen = true
-                                } else {
-                                    self.messageIsSeen = false
-                                }
-                            }
-                        }
-                        self.recentMessages.insert(recentMessage, at: 0)
-                        
-                    }
+                    let messageData = change.document.data()
+                    var recentMessage = MessageModel(documentId: docId, data: messageData)
                     
                     if change.type == .removed {
                         self.recentMessages.removeAll { $0.documentId == docId }
+                        continue
+                    }
+                    
+                    if recentMessage.toId == userId {
+                        // Message is to the current user
+                        self.handleIncomingMessage(userId:userId,recentMessage, messageData: messageData)
+                    } else {
+                        // Message is from the current user
+                        recentMessage.isRead = true
+                        self.updateOrInsertMessage(recentMessage)
                     }
                 }
             }
+    }
+
+    // Handle incoming message
+    private func handleIncomingMessage(userId:String,_ recentMessage: MessageModel, messageData: [String: Any]) {
+        self.lastReadMessageIdListener = UserManager.shared.getLastReadMessageId(userId: userId, chatPartnerId: recentMessage.fromId) { [weak self] _, chatPartnerLastReadMessageId in
+            guard let self = self else { return }
+            
+            var updatedMessage = recentMessage
+            if messageData["document_id"] as? String ?? "" == chatPartnerLastReadMessageId {
+                updatedMessage.isRead = true
+            } else {
+                updatedMessage.isRead = false
+            }
+            
+            self.updateOrInsertMessage(updatedMessage)
+        }
+    }
+
+    private func updateOrInsertMessage(_ message: MessageModel) {
+        if let index = self.recentMessages.firstIndex(where: { $0.documentId == message.documentId }) {
+            self.recentMessages.remove(at: index)
+        }
+        
+        // Find the correct position to insert the message based on timestamp
+        let insertionIndex = self.recentMessages.firstIndex(where: {
+            $0.dateCreated.dateValue() < message.dateCreated.dateValue()
+        }) ?? self.recentMessages.endIndex
+        
+        self.recentMessages.insert(message, at: insertionIndex)
     }
     
     
     @MainActor
     func refreshData() async {
-        // Cancel existing listener
+        // Cancel existing listeners
         messagesListener?.remove()
 
         // Fetch user data
@@ -292,7 +310,7 @@ extension MainMessageView{
                              Circle()
                                  .fill(Color.blue)
                                  .frame(width: 10, height: 10)
-                                 .opacity(vm.messageIsSeen ? 0 : 1)
+                                 .opacity(recentMessage.isRead ? 0 : 1)
                         }
                         .padding(.trailing)
                     }

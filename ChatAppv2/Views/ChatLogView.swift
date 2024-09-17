@@ -236,8 +236,15 @@ struct ChatLogView:View {
             }
             .background(.white)
             .safeAreaInset(edge: .top) {
-                customNavBar
-                    .shadow(color: Color.black.opacity(0.1), radius: 9, x: 0,y:1)
+                if !vm.isLoading{
+                    NavigationLink {
+                        ProfileView(passedUserId: vm.recipient?.userId ?? "", isUserCurrentlyLogOut: .constant(false))
+                    } label: {
+                        customNavBar
+                            .shadow(color: Color.black.opacity(0.1), radius: 9, x: 0,y:1)
+                    }
+                    .foregroundStyle(Color(.label))
+                }
             }
             
             .task {
@@ -310,7 +317,7 @@ extension ChatLogView{
                                                                             
                                 Text(studentId)
                                     .font(.subheadline)
-                                    .foregroundStyle(Color(.label))
+                                    .foregroundStyle(Color(.lightGray))
                             }
                         }
                     }
