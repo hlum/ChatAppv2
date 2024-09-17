@@ -28,9 +28,7 @@ class ChatLogViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     
     private var lastUpdateTimestamp: TimeInterval = 0
-
-
-
+    
 
     init(recipient: DBUser) {
         self.recipient = recipient

@@ -79,14 +79,10 @@ class MainViewMessageViewModel:ObservableObject{
                         }
                         if recentMessage.toId == userId{
                             self.lastReadMessageIdListener = UserManager.shared.getLastReadMessageId(userId: userId, chatPartnerId: recentMessage.fromId) { _,chatPartnerLastReadMessageId  in
-                                print("last read message id: \(chatPartnerLastReadMessageId)")
-                                print("recent message id: \(messageData["document_id"] as? String ?? "")")
                                 if messageData["document_id"] as? String ?? "" == chatPartnerLastReadMessageId {
                                     self.messageIsSeen = true
-                                    print("message is seen")
                                 } else {
                                     self.messageIsSeen = false
-                                    print("message is not seen")
                                 }
                             }
                         }
@@ -132,7 +128,7 @@ struct MainMessageView: View {
             
             VStack{
                 NavigationLink {
-                    ProfileView(isUserCurrentlyLogOut: $vm.isUserCurrentlyLoggedOut, isUser: true)
+                    ProfileView(passedUserId: vm.currentUserDB?.userId ?? "", isUserCurrentlyLogOut: $vm.isUserCurrentlyLoggedOut)
                 } label: {
                     customNavBar
                         .foregroundStyle(Color(.black))

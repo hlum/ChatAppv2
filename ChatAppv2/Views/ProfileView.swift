@@ -14,6 +14,7 @@ final class ProfileViewModel:ObservableObject{
     @Published var isLoading:Bool = false
     @Published var progress:Double = 0.0
     @Published var user :DBUser? = nil
+    @Published var passedUserId:String? = nil
     @Published var newName:String = ""
     
     @Published var imageSelection:PhotosPickerItem? = nil
@@ -21,6 +22,14 @@ final class ProfileViewModel:ObservableObject{
     @Published var showAlert:Bool = false
     @Published var alertTitle:String = ""
     
+    @Published var editingOption:EditingOprions? = nil
+    
+    @Published var isUser: Bool = false
+
+
+    init(passedUserId:String){
+        self.passedUserId = passedUserId
+    }
     
     func loadTransferableImage()async{
         isLoading = true
@@ -68,11 +77,24 @@ final class ProfileViewModel:ObservableObject{
         user?.preferences?.contains(text) == true
     }
     
+    func checkTheUser(uid:String){
+        guard let currentUser = AuthenticationManager.shared.currentUser else{
+            print("ProfileViewModel/checkTheUser : Can't get the current user")
+            return
+        }
+        self.isUser = currentUser.uid == uid
+        
+    }
+    
     func loadCurrentUser()throws {
-        let authDataResult = try  AuthenticationManager.shared.getAuthenticatedUser()
+        guard let passedUserId = self.passedUserId else{
+            print("ProfileViewModel/loadCurrentUser : Can't get the passedUserId")
+            return
+        }
         Task{
-            if let fetchedUser = try? await UserManager.shared.getUser(userId: authDataResult.uid){
+            if let fetchedUser = try? await UserManager.shared.getUser(userId: passedUserId){
                 await MainActor.run {
+                    checkTheUser(uid: fetchedUser.userId)
                     self.user = fetchedUser
                 }
             }
@@ -140,10 +162,13 @@ enum EditingOprions{
 }
 struct ProfileView: View {
     @Binding var isUserCurrentlyLogOut:Bool
-    @StateObject var vm = ProfileViewModel()
-    @State private var isEditing = false
-    @State private var editingOption:EditingOprions? = nil
-    var isUser: Bool
+    @StateObject var vm : ProfileViewModel
+    
+    init(passedUserId:String,isUserCurrentlyLogOut:Binding<Bool>){
+        _vm = StateObject(wrappedValue: ProfileViewModel(passedUserId: passedUserId))
+        _isUserCurrentlyLogOut = isUserCurrentlyLogOut
+        
+    }
 
     // Custom colors
     private let accentColor = Color.customOrange
@@ -158,10 +183,13 @@ struct ProfileView: View {
                         .onAppear{
                             checkThePermission()
                         }
+                    
                         .overlay(alignment:.bottomTrailing) {
-                            Image(systemName: "pencil.circle.fill")
-                                .font(.title2)
-                                .foregroundStyle(Color(.blue))
+                            if vm.isUser{
+                                Image(systemName: "pencil.circle.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(Color(.customOrange))
+                            }
                         }
                         .onChange(of: vm.imageSelection) {
                             Task{
@@ -174,8 +202,10 @@ struct ProfileView: View {
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.white)
                         .onTapGesture {
-                            withAnimation {
-                                editingOption = .EditingName
+                            if vm.isUser{
+                                withAnimation {
+                                    vm.editingOption = .EditingName
+                                }
                             }
                         }
                     
@@ -204,7 +234,7 @@ struct ProfileView: View {
                 .cornerRadius(15)
                 .shadow(color: .gray.opacity(0.2), radius: 10, x: 0, y: 5)
                 .padding()
-                .navigationTitle(isUser ? "Your Profile" : "\(vm.user?.name ?? "User")'s Profile")
+                .navigationTitle(vm.isUser ? "Your Profile" : "\(vm.user?.name ?? "User")'s Profile")
                 .navigationBarTitleDisplayMode(.inline)
                 .alert(isPresented: $vm.showAlert) {
                     Alert(title: Text(vm.alertTitle))
@@ -216,7 +246,7 @@ struct ProfileView: View {
             }
             
             //Editing Views
-            switch editingOption {
+            switch vm.editingOption {
             case .EditingName:
                 changeNameView
             case .EditiingPreferences:
@@ -243,7 +273,7 @@ struct ProfileView: View {
             }
         }
         .overlay(alignment: .bottom, content: {
-            if editingOption == nil && !vm.isLoading {
+            if vm.editingOption == nil && !vm.isLoading && vm.isUser {
                 Button {
                     vm.logOut()
                     isUserCurrentlyLogOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
@@ -260,7 +290,7 @@ struct ProfileView: View {
                 }
             }
         })
-        .navigationBarBackButtonHidden(editingOption != nil || vm.isLoading ? true : false)    }
+        .navigationBarBackButtonHidden(vm.editingOption != nil || vm.isLoading ? true : false)    }
     
     // Displaying selected preferences when not editing
     private var preferencesSection: some View {
@@ -271,12 +301,14 @@ struct ProfileView: View {
                     .foregroundColor(accentColor)
                     .padding(.bottom, 4)
                 Spacer()
-                Button {
-                    editingOption = .EditiingPreferences
-                } label: {
-                    Image(systemName: "pencil")
-                        .font(.title2)
-                        .foregroundStyle(Color(.blue))
+                if vm.isUser{
+                    Button {
+                        vm.editingOption = .EditiingPreferences
+                    } label: {
+                        Image(systemName: "pencil")
+                            .font(.title2)
+                            .foregroundStyle(Color(.blue))
+                    }
                 }
 
             }
@@ -339,7 +371,7 @@ struct ProfileView: View {
                 ZStack{
                     Color.customBlack.ignoresSafeArea()
                     Button {
-                        editingOption = nil
+                        vm.editingOption = nil
                     } label: {
                         Text("戻る")
                             .font(.headline)
@@ -378,7 +410,7 @@ struct ProfileView: View {
             Task{
                 await vm.updateName()
                 DispatchQueue.main.async {
-                    editingOption = nil
+                    vm.editingOption = nil
                 }
             }
             
@@ -399,7 +431,11 @@ struct ProfileView: View {
 extension ProfileView{
     private var ImagePickerView : some View{
         VStack{
-            PhotosPicker(selection: $vm.imageSelection,matching: .images) {
+            if vm.isUser{
+                PhotosPicker(selection: $vm.imageSelection,matching: .images) {
+                    profileImage
+                }
+            }else{
                 profileImage
             }
         }
@@ -437,7 +473,7 @@ extension ProfileView{
             Color.black.opacity(0.9).ignoresSafeArea()
                 .onTapGesture {
                     withAnimation {
-                        editingOption = nil
+                        vm.editingOption = nil
                     }
                 }
             VStack{
@@ -469,7 +505,7 @@ extension ProfileView{
                             .padding(.horizontal)
                     }
                     Button {
-                        editingOption = nil
+                        vm.editingOption = nil
                     } label: {
                         Text("キャンセル")
                             .font(.headline)
@@ -500,6 +536,6 @@ let interests = [
 
 #Preview {
     NavigationStack{
-        ProfileView(isUserCurrentlyLogOut: .constant(false), isUser: true)
+        ProfileView(passedUserId: "", isUserCurrentlyLogOut: .constant(false))
     }
 }
