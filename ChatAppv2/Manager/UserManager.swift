@@ -103,7 +103,11 @@ final class UserManager{
             snapshot.documents.forEach { documentSnapshot in
                 let data = documentSnapshot.data()
                 let user = DBUser(data: data)
-                if user.userId != AuthenticationManager.shared.currentUser?.uid{
+                guard let currentUser = try? AuthenticationManager.shared.getAuthenticatedUser()else{
+                    print("UserManager: Can't get current user")
+                    return
+                }
+                if user.userId != currentUser.uid{
                     users.append(user)
                 }
             }

@@ -78,7 +78,7 @@ final class ProfileViewModel:ObservableObject{
     }
     
     func checkTheUser(uid:String){
-        guard let currentUser = AuthenticationManager.shared.currentUser else{
+        guard let currentUser = try? AuthenticationManager.shared.getAuthenticatedUser() else{
             print("ProfileViewModel/checkTheUser : Can't get the current user")
             return
         }
@@ -94,7 +94,7 @@ final class ProfileViewModel:ObservableObject{
         Task{
             if let fetchedUser = try? await UserManager.shared.getUser(userId: passedUserId){
                 await MainActor.run {
-                    checkTheUser(uid: fetchedUser.userId)
+                    checkTheUser(uid: passedUserId)
                     self.user = fetchedUser
                 }
             }
@@ -152,6 +152,8 @@ final class ProfileViewModel:ObservableObject{
     
     func logOut(){
         AuthenticationManager.shared.signOut()
+        self.user = nil
+        self.passedUserId = nil
     }
 
 
@@ -283,6 +285,7 @@ struct ProfileView: View {
                 Button {
                     vm.logOut()
                     isUserCurrentlyLogOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
+                    presentationMode.wrappedValue.dismiss()
                 } label: {
                     Text("サインアウトする")
                         .font(.headline)
