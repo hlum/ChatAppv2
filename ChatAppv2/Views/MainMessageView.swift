@@ -146,7 +146,7 @@ struct MainMessageView: View {
             
             VStack{
                 NavigationLink {
-                    ProfileView(passedUserId: vm.currentUserDB?.userId ?? "", isUserCurrentlyLogOut: $vm.isUserCurrentlyLoggedOut)
+                    ProfileView(passedUserId: vm.currentUserDB?.userId ?? "", isUserCurrentlyLogOut: $vm.isUserCurrentlyLoggedOut, isFromChatView: false)
                 } label: {
                     customNavBar
                         .foregroundStyle(Color(.black))
@@ -342,10 +342,7 @@ extension MainMessageView{
             .shadow(radius: 15)
         }
         .fullScreenCover(isPresented: $vm.showNewMessageView) {
-            CreateNewMessageView { user in
-                print(user.email ?? "")
-                vm.selectedRecipient = user
-            }
+            CreateNewMessageView()
         }
     }
 }

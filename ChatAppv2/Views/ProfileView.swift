@@ -161,13 +161,15 @@ enum EditingOprions{
     case EditiingPreferences
 }
 struct ProfileView: View {
+    @Environment(\.presentationMode) var presentationMode
     @Binding var isUserCurrentlyLogOut:Bool
     @StateObject var vm : ProfileViewModel
+    var isFromChatView:Bool
     
-    init(passedUserId:String,isUserCurrentlyLogOut:Binding<Bool>){
+    init(passedUserId:String,isUserCurrentlyLogOut:Binding<Bool>,isFromChatView:Bool){
         _vm = StateObject(wrappedValue: ProfileViewModel(passedUserId: passedUserId))
         _isUserCurrentlyLogOut = isUserCurrentlyLogOut
-        
+        self.isFromChatView = isFromChatView
     }
 
     // Custom colors
@@ -244,6 +246,10 @@ struct ProfileView: View {
                 }
                 
             }
+            .safeAreaInset(edge: .top, content: {
+                customNavBar
+            })
+
             
             //Editing Views
             switch vm.editingOption {
@@ -289,8 +295,66 @@ struct ProfileView: View {
                         .shadow(radius: 20)
                 }
             }
+            if !vm.isUser{
+                if let user = vm.user{
+                    if isFromChatView{
+                        Button {
+                            presentationMode.wrappedValue.dismiss()
+                        } label: {
+                            Text("メッセージを送る")
+                                .font(.headline)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                                .padding()
+                                .shadow(radius: 20)
+                        }
+                    }
+                    else{
+                        NavigationLink {
+                            ChatLogView(recipient: user)
+                        } label: {
+                            Text("メッセージを送る")
+                                .font(.headline)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                                .padding()
+                                .shadow(radius: 20)
+                        }
+                    }
+                }
+
+            }
         })
-        .navigationBarBackButtonHidden(vm.editingOption != nil || vm.isLoading ? true : false)    }
+        .toolbar(.hidden)
+    }
+    
+    private var customNavBar:some View{
+        HStack{
+            Button{
+                presentationMode.wrappedValue.dismiss()
+            } label: {
+                Image(systemName: "arrow.left")
+                    .font(.title)
+                    .foregroundColor(.blue)
+            }
+            if let user = vm.user,
+               let name = user.name
+            {
+                Text(vm.isUser ? "Your Profile" : "\(name)'s Profile")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.black)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .background(.white)
+    }
     
     // Displaying selected preferences when not editing
     private var preferencesSection: some View {
@@ -536,6 +600,7 @@ let interests = [
 
 #Preview {
     NavigationStack{
-        ProfileView(passedUserId: "", isUserCurrentlyLogOut: .constant(false))
+        ProfileView(passedUserId: "", isUserCurrentlyLogOut: .constant(false), isFromChatView: false)
     }
 }
+
