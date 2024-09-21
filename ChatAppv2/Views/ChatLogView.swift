@@ -28,9 +28,7 @@ class ChatLogViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     
     private var lastUpdateTimestamp: TimeInterval = 0
-
-
-
+    
 
     init(recipient: DBUser) {
         self.recipient = recipient
@@ -214,6 +212,7 @@ struct ChatLogView:View {
     @StateObject var vm : ChatLogViewModel
     @FocusState var isFocused: Bool
     @Environment(\.presentationMode) var presentationMode
+    @State var isShowingProfile = false
 
     init(recipient: DBUser) {
             _vm = StateObject(wrappedValue: ChatLogViewModel(recipient: recipient))
@@ -238,8 +237,18 @@ struct ChatLogView:View {
             }
             .background(.white)
             .safeAreaInset(edge: .top) {
-                customNavBar
-                    .shadow(color: Color.black.opacity(0.1), radius: 9, x: 0,y:1)
+                if !vm.isLoading{
+                    Button{
+                        isShowingProfile = true
+                    } label: {
+                        customNavBar
+                            .shadow(color: Color.black.opacity(0.1), radius: 9, x: 0,y:1)
+                    }
+                    .foregroundStyle(Color(.label))
+                }
+            }
+            .fullScreenCover(isPresented: $isShowingProfile) {
+                ProfileView(passedUserId: vm.recipient?.userId ?? "", isUserCurrentlyLogOut: .constant(false), isFromChatView: true)
             }
             
             .task {
@@ -312,7 +321,7 @@ extension ChatLogView{
                                                                             
                                 Text(studentId)
                                     .font(.subheadline)
-                                    .foregroundStyle(Color(.label))
+                                    .foregroundStyle(Color(.lightGray))
                             }
                         }
                     }

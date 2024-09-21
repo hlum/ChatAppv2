@@ -37,6 +37,7 @@ struct MessageModel:Identifiable, Codable,Hashable{
     let senderProfileUrl:String
     let senderName:String
     let recieverName:String
+    var isRead:Bool = false
     
     
     var formattedTime: String {
