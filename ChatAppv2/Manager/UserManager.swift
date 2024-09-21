@@ -150,6 +150,7 @@ final class UserManager{
 extension UserManager{
     
     func storeMessages(message:MessageModel)async{
+        
         let document = messagesCollection
             .document(message.fromId)
             .collection(message.toId)
@@ -268,6 +269,7 @@ extension UserManager{
 
     
     func updateLastReadMessageId(userId:String,chatPartnerId:String,lastMessageId:String) async{
+        
         let documentId = IdGenerator.shared.generateUnionId(userId, chatPartnerId)
         let lastReadMessageReference = lastReadMessagesCollection
             .document(documentId)
