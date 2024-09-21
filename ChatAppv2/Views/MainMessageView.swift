@@ -8,8 +8,11 @@ class MainViewMessageViewModel:ObservableObject{
     @Published var currentUserDB : DBUser? = nil // currentUser
     @Published var isUserCurrentlyLoggedOut:Bool = true
     @Published var showNewMessageView:Bool = false
-    @Published var selectedRecipient:DBUser? = nil
     @Published var recentMessages: [MessageModel] = []
+    
+    
+    @Published var isLoading:Bool = false
+    @Published var progress:Float = 0.0 //from 0 -> 1
     
     
 
@@ -25,13 +28,17 @@ class MainViewMessageViewModel:ObservableObject{
 
     
     func fetchUserData()async {
+        await handledLoading(progress: 0.1)
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser()else {
             print("MainViewMessageViewModel:Can't fetch user data")
             return
         }
-        
+        await handledLoading(progress: 0.15)
+
             let user = try? await UserManager.shared.getUser(userId: authDataResult.uid)
-            
+        
+        await handledLoading(progress: 0.3)
+
             DispatchQueue.main.async{
                 self.currentUserDB = user
             }
@@ -48,7 +55,9 @@ class MainViewMessageViewModel:ObservableObject{
         guard let userId = try? AuthenticationManager.shared.getAuthenticatedUser().uid else {
             return
         }
-        
+        Task{
+            await handledLoading(progress: 0.4)
+        }
         messagesListener = UserManager.shared.recentMessagesCollection
             .document(userId)
             .collection("messages")
@@ -76,6 +85,8 @@ class MainViewMessageViewModel:ObservableObject{
                     
                     if recentMessage.toId == userId {
                         // Message is to the current user
+                        
+
                         self.handleIncomingMessage(userId:userId,recentMessage, messageData: messageData)
                     } else {
                         // Message is from the current user
@@ -97,7 +108,10 @@ class MainViewMessageViewModel:ObservableObject{
             } else {
                 updatedMessage.isRead = false
             }
-            
+            Task{
+                await self.handledLoading(progress: 0.8)
+            }
+
             self.updateOrInsertMessage(updatedMessage)
         }
     }
@@ -112,9 +126,18 @@ class MainViewMessageViewModel:ObservableObject{
             $0.dateCreated.dateValue() < message.dateCreated.dateValue()
         }) ?? self.recentMessages.endIndex
         
+        
         self.recentMessages.insert(message, at: insertionIndex)
+        Task{
+            await handledLoading(progress: 1)
+        }
     }
     
+    @MainActor
+    private func handledLoading(progress: Float) {
+        self.progress = progress
+        self.isLoading = progress < 1
+    }
     
     @MainActor
     func refreshData() async {
@@ -144,40 +167,55 @@ struct MainMessageView: View {
     var body: some View {
         NavigationStack{
             
-            VStack{
-                NavigationLink {
-                    ProfileView(passedUserId: vm.currentUserDB?.userId ?? "", isUserCurrentlyLogOut: $vm.isUserCurrentlyLoggedOut, isFromChatView: false)
-                } label: {
-                    customNavBar
-                        .foregroundStyle(Color(.black))
+            ZStack{
+                VStack{
+                    NavigationLink {
+                        ProfileView(passedUserId: vm.currentUserDB?.userId ?? "", isUserCurrentlyLogOut: $vm.isUserCurrentlyLoggedOut, isFromChatView: false)
+                    } label: {
+                        customNavBar
+                            .foregroundStyle(Color(.black))
+                    }
+
+                    ScrollView{
+                        messagesView
+                    }
+                    .refreshable {
+                        await vm.refreshData()
+                    }
+                }
+                .onAppear(perform: {
+                    Task{
+                        await vm.fetchUserData()
+                        vm.fetchRecentMessages()
+                    }
+                })
+                .onDisappear {
+                          vm.cancelListeners()
+                      }
+                
+                .overlay(newMessageButton,alignment: .bottom)
+                .toolbar(.hidden)
+                
+                if vm.isLoading {
+                    Color.black.opacity(0.8).ignoresSafeArea()
+                    VStack {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(2)
+                        
+                        ProgressView(value: vm.progress)
+                            .frame(width: 200)
+                            .tint(.white)
+                            .padding()
+                        
+                        Text("\(Int(vm.progress * 100))%")
+                            .foregroundColor(.white)
+                            .font(.headline)
+                    }
                 }
 
-                ScrollView{
-                    messagesView
-                }
-                .refreshable {
-                    await vm.refreshData()
-                }
-            }
-            .onAppear(perform: {
-                Task{
-                    await vm.fetchUserData()
-                    vm.fetchRecentMessages()
-                }
-            })
-            .onDisappear {
-                      vm.cancelListeners()
-                  }
-            .navigationDestination(for: DBUser.self, destination: { user in
-                ChatLogView(recipient: user)
-            })
-            .navigationDestination(item: $vm.selectedRecipient, destination: { user in
-                ChatLogView(recipient: user)
-            })
-            
-            .overlay(newMessageButton,alignment: .bottom)
-            .toolbar(.hidden)
-        }
+            }//End of ZStack
+        }//End of NavigationStack
     }
 }
 
@@ -264,9 +302,10 @@ extension MainMessageView{
         ForEach(vm.recentMessages) { recentMessage in
             
             VStack{
-
-                NavigationLink(value: DBUser(recentMessage: recentMessage, currentUser: vm.currentUserDB ?? DBUser(userId:""))) {
-                    
+                
+                NavigationLink {
+                    ChatLogView(recipient:  DBUser(recentMessage: recentMessage, currentUser: vm.currentUserDB ?? DBUser(userId:"")))
+                } label: {
                     HStack(spacing: 10){
                         WebImage(url: URL(string: recentMessage.recipientProfileUrl)) { image in
                             image
@@ -286,14 +325,14 @@ extension MainMessageView{
                                 .aspectRatio(contentMode: .fit)
                                 .frame(width: 65,height: 65)
                                 .padding()
-
+                            
                         }
                         
                         VStack(alignment:.leading){
-                                
+                            
                             Text(recentMessage.recieverName)
-                                    .font(.system(size: 16,weight: .bold))
-                          
+                                .font(.system(size: 16,weight: .bold))
+                            
                             
                             
                             Text(recentMessage.text)
@@ -307,22 +346,21 @@ extension MainMessageView{
                                 .foregroundColor(.gray)
                             
                             // add an unread message indicator here if needed
-                             Circle()
-                                 .fill(Color.blue)
-                                 .frame(width: 10, height: 10)
-                                 .opacity(recentMessage.isRead ? 0 : 1)
+                            Circle()
+                                .fill(Color.blue)
+                                .frame(width: 10, height: 10)
+                                .opacity(recentMessage.isRead ? 0 : 1)
                         }
                         .padding(.trailing)
                     }
                 }
-                
                 .foregroundStyle(Color(.label))
                 Divider()
                     .padding(.vertical,8)
             }
             .padding(.horizontal)
         }
-    }
+}
     
     private var newMessageButton:some View{
         Button {
