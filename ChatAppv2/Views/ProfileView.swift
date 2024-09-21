@@ -346,6 +346,8 @@ struct ProfileView: View {
                     .font(.title)
                     .foregroundColor(.blue)
             }
+
+            Spacer()
             if let user = vm.user,
                let name = user.name
             {
@@ -354,8 +356,10 @@ struct ProfileView: View {
                     .fontWeight(.bold)
                     .foregroundColor(.black)
             }
+            Spacer()
         }
         .frame(maxWidth: .infinity)
+        .padding(.horizontal)
         .background(.white)
     }
     
