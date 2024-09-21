@@ -8,7 +8,6 @@ class MainViewMessageViewModel:ObservableObject{
     @Published var currentUserDB : DBUser? = nil // currentUser
     @Published var isUserCurrentlyLoggedOut:Bool = true
     @Published var showNewMessageView:Bool = false
-    @Published var selectedRecipient:DBUser? = nil
     @Published var recentMessages: [MessageModel] = []
     
     
@@ -193,12 +192,6 @@ struct MainMessageView: View {
                 .onDisappear {
                           vm.cancelListeners()
                       }
-                .navigationDestination(for: DBUser.self, destination: { user in
-                    ChatLogView(recipient: user)
-                })
-                .navigationDestination(item: $vm.selectedRecipient, destination: { user in
-                    ChatLogView(recipient: user)
-                })
                 
                 .overlay(newMessageButton,alignment: .bottom)
                 .toolbar(.hidden)
@@ -309,9 +302,10 @@ extension MainMessageView{
         ForEach(vm.recentMessages) { recentMessage in
             
             VStack{
-
-                NavigationLink(value: DBUser(recentMessage: recentMessage, currentUser: vm.currentUserDB ?? DBUser(userId:""))) {
-                    
+                
+                NavigationLink {
+                    ChatLogView(recipient:  DBUser(recentMessage: recentMessage, currentUser: vm.currentUserDB ?? DBUser(userId:"")))
+                } label: {
                     HStack(spacing: 10){
                         WebImage(url: URL(string: recentMessage.recipientProfileUrl)) { image in
                             image
@@ -331,14 +325,14 @@ extension MainMessageView{
                                 .aspectRatio(contentMode: .fit)
                                 .frame(width: 65,height: 65)
                                 .padding()
-
+                            
                         }
                         
                         VStack(alignment:.leading){
-                                
+                            
                             Text(recentMessage.recieverName)
-                                    .font(.system(size: 16,weight: .bold))
-                          
+                                .font(.system(size: 16,weight: .bold))
+                            
                             
                             
                             Text(recentMessage.text)
@@ -352,22 +346,21 @@ extension MainMessageView{
                                 .foregroundColor(.gray)
                             
                             // add an unread message indicator here if needed
-                             Circle()
-                                 .fill(Color.blue)
-                                 .frame(width: 10, height: 10)
-                                 .opacity(recentMessage.isRead ? 0 : 1)
+                            Circle()
+                                .fill(Color.blue)
+                                .frame(width: 10, height: 10)
+                                .opacity(recentMessage.isRead ? 0 : 1)
                         }
                         .padding(.trailing)
                     }
                 }
-                
                 .foregroundStyle(Color(.label))
                 Divider()
                     .padding(.vertical,8)
             }
             .padding(.horizontal)
         }
-    }
+}
     
     private var newMessageButton:some View{
         Button {
