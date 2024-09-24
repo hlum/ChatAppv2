@@ -17,8 +17,9 @@ struct DBUser:Identifiable, Codable , Hashable {
     let dateCreated : Timestamp?
     let preferences:[String]?
     let age : Double?
+    let chatIds:[String]
     
-    init(id:String,userId:String,name:String,email:String,photoUrl:String,dateCreated:Timestamp,preferences:[String],age:Double){
+    init(id:String,userId:String,name:String,email:String,photoUrl:String,dateCreated:Timestamp,preferences:[String],age:Double,chatIds:[String]){
         self.id = id
         self.userId = userId
         self.name = name
@@ -27,6 +28,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.dateCreated = dateCreated
         self.preferences = preferences
         self.age = age
+        self.chatIds = chatIds
     }
     
     init(recentMessage:MessageModel,currentUser:DBUser){
@@ -61,6 +63,7 @@ struct DBUser:Identifiable, Codable , Hashable {
             }
         }()
         self.age = 0
+        self.chatIds = []
     }
     
     init(data:[String:Any]){
@@ -71,6 +74,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.preferences = data[CodingKeys.preferences.rawValue] as? [String] ?? []
         self.age = data[CodingKeys.age.rawValue] as? Double ?? 18
         self.name = data[CodingKeys.name.rawValue] as? String ?? ""
+        self.chatIds = data[CodingKeys.chatIds.rawValue] as? [String] ?? []
     }
     
     init(authDataResult : AuthDataResultModel,photoUrl:String?,preferences:[String],name:String,age:Double){
@@ -81,6 +85,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.preferences = preferences
         self.name = name
         self.age = age
+        self.chatIds = []
     }
 
     
@@ -92,6 +97,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.preferences = nil
         self.name = nil
         self.age = nil
+        self.chatIds = []
     }
     
     init(
@@ -108,6 +114,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.preferences = []
         self.name = nil
         self.age = nil
+        self.chatIds = []
     }
     
     enum CodingKeys:String, CodingKey {
@@ -118,6 +125,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         case preferences = "preferences"
         case age = "age"
         case name = "name"
+        case chatIds = "chat_ids"
     }
     
     init(from decoder: Decoder) throws {
@@ -130,6 +138,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.dateCreated = try container.decodeIfPresent(Timestamp.self, forKey: .dateCreated)
          self.preferences = try container.decodeIfPresent([String].self, forKey: .preferences)
          self.age = try container.decodeIfPresent(Double.self, forKey: .age)
+        self.chatIds = try container.decodeIfPresent([String].self, forKey: .chatIds) ?? []
      }
      
      func encode(to encoder: Encoder) throws {
@@ -141,6 +150,7 @@ struct DBUser:Identifiable, Codable , Hashable {
          try container.encodeIfPresent(self.dateCreated, forKey: .dateCreated)
          try container.encodeIfPresent(self.preferences, forKey: .preferences)
          try container.encodeIfPresent(self.age, forKey: .age)
+         try container.encodeIfPresent(self.chatIds, forKey: .chatIds)
      }
     
 }

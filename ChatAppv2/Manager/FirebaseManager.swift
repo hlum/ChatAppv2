@@ -10,12 +10,12 @@ import Firebase
 import FirebaseAuth
 
 final class AuthenticationManager: ObservableObject{
-    @Published var currentUser : AuthDataResultModel? = nil
+
     static let shared = AuthenticationManager()
     
     private init(){
-        self.currentUser = try? getAuthenticatedUser()
     }
+    
     @discardableResult
     func getAuthenticatedUser() throws -> AuthDataResultModel{
         guard let user = Auth.auth().currentUser else{
