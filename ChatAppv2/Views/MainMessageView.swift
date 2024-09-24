@@ -58,7 +58,7 @@ class MainViewMessageViewModel:ObservableObject{
         Task{
             await handledLoading(progress: 0.4)
         }
-        messagesListener = UserManager.shared.recentMessagesCollection
+        messagesListener = ChatManager.shared.recentMessagesCollection
             .document(userId)
             .collection("messages")
             .order(by: FirebaseConstants.dateCreated, descending: true)  // Use timestamp and descending order
@@ -85,8 +85,6 @@ class MainViewMessageViewModel:ObservableObject{
                     
                     if recentMessage.toId == userId {
                         // Message is to the current user
-                        
-
                         self.handleIncomingMessage(userId:userId,recentMessage, messageData: messageData)
                     } else {
                         // Message is from the current user

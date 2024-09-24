@@ -40,7 +40,7 @@ class ChatLogViewModel: ObservableObject {
 
         await fetchCurrentDBUser()
         if currentUserDB != nil {
-            fetchMessages()
+            fetchMessages2()
             startListeningToLastReadMessageId()
             
 
@@ -61,11 +61,11 @@ class ChatLogViewModel: ObservableObject {
     
     
     func fetchCurrentDBUser() async {
-        let currentUser = try? AuthenticationManager.shared.getAuthenticatedUser()
-        guard let userId = currentUser?.uid else {
-            print("ChatLogView/fetchCurrentDBUser: Can't get currentUserId")
+        guard let currentUser = try? AuthenticationManager.shared.getAuthenticatedUser() else{
+            print("ChatLogView/fetchCurrentDBUser: Can't get currentUser")
             return
         }
+        let userId = currentUser.uid
         
         do {
             let user = try await UserManager.shared.getUser(userId: userId)
@@ -78,21 +78,18 @@ class ChatLogViewModel: ObservableObject {
         }
     }
 
-    
-    
-    func sendMessage() async{
-        guard let fromId = self.currentUserDB?.userId
-            else{
-                print("Can't get current user id")
-                return
-            }
-        guard let toId = self.recipient?.userId
-            else{
-                print("Can't get recipient user id")
-                return
-            }
-
-        //data for the sender
+    func sendMessage2() async{
+        guard let fromId = self.currentUserDB?.userId else {
+            print("ChatLogViewModel/fetchMessages: Can't get current user id")
+            return
+        }
+        
+        
+        guard let toId = self.recipient?.userId else {
+            print("ChatLogViewModel/fetchMessages: Can't get recipient user id")
+            return
+        }
+        
         let messageData = [
             FirebaseConstants.fromId: fromId,
             FirebaseConstants.toId: toId,
@@ -108,13 +105,48 @@ class ChatLogViewModel: ObservableObject {
         
         let message = MessageModel(documentId: "",id:"" , data: messageData)
         
-        await UserManager.shared.storeMessages(message: message)
+        await ChatManager.shared.sendMessage(message: message, recipientId: toId, userId: fromId)
         DispatchQueue.main.async {
             self.textFieldText = ""
         }
+        
     }
     
-    func fetchMessages(){
+//    func sendMessage() async{
+//        guard let fromId = self.currentUserDB?.userId
+//            else{
+//                print("Can't get current user id")
+//                return
+//            }
+//        guard let toId = self.recipient?.userId
+//            else{
+//                print("Can't get recipient user id")
+//                return
+//            }
+//
+//        //data for the sender
+//        let messageData = [
+//            FirebaseConstants.fromId: fromId,
+//            FirebaseConstants.toId: toId,
+//            FirebaseConstants.text: self.textFieldText,
+//            FirebaseConstants.dateCreated: Timestamp(),
+//            FirebaseConstants.recipientProfileUrl:recipient?.photoUrl ?? "",
+//            FirebaseConstants.recipientEmail : recipient?.email ?? "",
+//            FirebaseConstants.senderEmail : currentUserDB?.email ?? "",
+//            FirebaseConstants.senderProfileUrl:currentUserDB?.photoUrl ?? "Chat log : No image url",
+//            FirebaseConstants.senderName : currentUserDB?.name ?? "Can't get sendername messageLogView/sendmessage",
+//            FirebaseConstants.recieverName:recipient?.name ?? "Can't get recievername messageLogView/sendmessage"
+//        ] as [String : Any]
+//
+//        let message = MessageModel(documentId: "",id:"" , data: messageData)
+//
+//        await UserManager.shared.storeMessages(message: message)
+//        DispatchQueue.main.async {
+//            self.textFieldText = ""
+//        }
+//    }
+    
+    func fetchMessages2(){
         guard let fromId = self.currentUserDB?.userId else {
             print("ChatLogViewModel/fetchMessages: Can't get current user id")
             return
@@ -125,17 +157,40 @@ class ChatLogViewModel: ObservableObject {
             print("ChatLogViewModel/fetchMessages: Can't get recipient user id")
             return
         }
-
-        messagesListener = UserManager.shared.getMessages(fromId: fromId, toId: toId) {
-            [weak self] message,
-            changeType in
-            guard let self = self else { return }
+        
+        let chatId = IdGenerator.shared.generateUnionId(fromId, toId)
+        
+        ChatManager.shared.getMessages(userId: fromId, recipientId: toId) {[weak self] message, changeType in
+            guard let self = self else {return}
+            
             DispatchQueue.main.async {
                 self.handleMessageChanges(message: message, changeType: changeType)
             }
-
         }
     }
+    
+//    func fetchMessages(){
+//        guard let fromId = self.currentUserDB?.userId else {
+//            print("ChatLogViewModel/fetchMessages: Can't get current user id")
+//            return
+//        }
+//
+//
+//        guard let toId = self.recipient?.userId else {
+//            print("ChatLogViewModel/fetchMessages: Can't get recipient user id")
+//            return
+//        }
+//
+//        messagesListener = UserManager.shared.getMessages(fromId: fromId, toId: toId) {
+//            [weak self] message,
+//            changeType in
+//            guard let self = self else { return }
+//            DispatchQueue.main.async {
+//                self.handleMessageChanges(message: message, changeType: changeType)
+//            }
+//
+//        }
+//    }
     
     @MainActor
     func handleMessageChanges(message:MessageModel,changeType:DocumentChangeType){
@@ -394,7 +449,7 @@ extension ChatLogView{
 
             Button {
                 Task{
-                    await vm.sendMessage()
+                    await vm.sendMessage2()
                 }
                 
             } label: {

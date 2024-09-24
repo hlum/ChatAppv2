@@ -87,6 +87,7 @@ struct MessageModel:Identifiable, Codable,Hashable{
         self.senderName = data[FirebaseConstants.senderName] as? String ?? ""
         self.recieverName = data[FirebaseConstants.recieverName] as? String ?? ""
     }
+    
     init(documentId:String,data:[String:Any]) {
         self.documentId = documentId
         self.fromId = data[FirebaseConstants.fromId] as? String ?? ""
