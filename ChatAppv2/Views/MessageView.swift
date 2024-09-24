@@ -26,7 +26,7 @@ struct MessageView: View {
                 }.padding(.horizontal)
             }else{
                 HStack{
-                    WebImage(url: URL(string: message.recipientProfileUrl)) { image in
+                    WebImage(url: URL(string: message.senderProfileUrl)) { image in
                         image
                             .resizable()
                             .scaledToFill()
