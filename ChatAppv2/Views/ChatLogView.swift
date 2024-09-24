@@ -40,7 +40,7 @@ class ChatLogViewModel: ObservableObject {
 
         await fetchCurrentDBUser()
         if currentUserDB != nil {
-            fetchMessages2()
+            fetchMessages()
             startListeningToLastReadMessageId()
             
 
@@ -111,42 +111,9 @@ class ChatLogViewModel: ObservableObject {
         }
         
     }
+
     
-//    func sendMessage() async{
-//        guard let fromId = self.currentUserDB?.userId
-//            else{
-//                print("Can't get current user id")
-//                return
-//            }
-//        guard let toId = self.recipient?.userId
-//            else{
-//                print("Can't get recipient user id")
-//                return
-//            }
-//
-//        //data for the sender
-//        let messageData = [
-//            FirebaseConstants.fromId: fromId,
-//            FirebaseConstants.toId: toId,
-//            FirebaseConstants.text: self.textFieldText,
-//            FirebaseConstants.dateCreated: Timestamp(),
-//            FirebaseConstants.recipientProfileUrl:recipient?.photoUrl ?? "",
-//            FirebaseConstants.recipientEmail : recipient?.email ?? "",
-//            FirebaseConstants.senderEmail : currentUserDB?.email ?? "",
-//            FirebaseConstants.senderProfileUrl:currentUserDB?.photoUrl ?? "Chat log : No image url",
-//            FirebaseConstants.senderName : currentUserDB?.name ?? "Can't get sendername messageLogView/sendmessage",
-//            FirebaseConstants.recieverName:recipient?.name ?? "Can't get recievername messageLogView/sendmessage"
-//        ] as [String : Any]
-//
-//        let message = MessageModel(documentId: "",id:"" , data: messageData)
-//
-//        await UserManager.shared.storeMessages(message: message)
-//        DispatchQueue.main.async {
-//            self.textFieldText = ""
-//        }
-//    }
-    
-    func fetchMessages2(){
+    func fetchMessages(){
         guard let fromId = self.currentUserDB?.userId else {
             print("ChatLogViewModel/fetchMessages: Can't get current user id")
             return
@@ -158,8 +125,6 @@ class ChatLogViewModel: ObservableObject {
             return
         }
         
-        let chatId = IdGenerator.shared.generateUnionId(fromId, toId)
-        
         ChatManager.shared.getMessages(userId: fromId, recipientId: toId) {[weak self] message, changeType in
             guard let self = self else {return}
             
@@ -168,29 +133,7 @@ class ChatLogViewModel: ObservableObject {
             }
         }
     }
-    
-//    func fetchMessages(){
-//        guard let fromId = self.currentUserDB?.userId else {
-//            print("ChatLogViewModel/fetchMessages: Can't get current user id")
-//            return
-//        }
-//
-//
-//        guard let toId = self.recipient?.userId else {
-//            print("ChatLogViewModel/fetchMessages: Can't get recipient user id")
-//            return
-//        }
-//
-//        messagesListener = UserManager.shared.getMessages(fromId: fromId, toId: toId) {
-//            [weak self] message,
-//            changeType in
-//            guard let self = self else { return }
-//            DispatchQueue.main.async {
-//                self.handleMessageChanges(message: message, changeType: changeType)
-//            }
-//
-//        }
-//    }
+ 
     
     @MainActor
     func handleMessageChanges(message:MessageModel,changeType:DocumentChangeType){
@@ -227,7 +170,7 @@ class ChatLogViewModel: ObservableObject {
         if now - lastUpdateTimestamp > 0.009 {
             lastUpdateTimestamp = now
             Task {
-                await UserManager.shared.updateLastReadMessageId(userId: userId, chatPartnerId: chatPartnerId, lastMessageId: chatMessages.last?.documentId ?? "")
+                await ChatManager.shared.updateLastReadMessageId(userId: userId, chatPartnerId: chatPartnerId, lastMessageId: chatMessages.last?.documentId ?? "")
             }
         }
     }
@@ -241,7 +184,7 @@ class ChatLogViewModel: ObservableObject {
          }
          
     
-        self.listenerToLastReadMessageId = UserManager.shared.getLastReadMessageId(userId: currentUserId, chatPartnerId: recipientId, completion: { lastReadMessageId,_  in
+        self.listenerToLastReadMessageId = ChatManager.shared.getLastReadMessageId(userId: currentUserId, chatPartnerId: recipientId, completion: { lastReadMessageId,_  in
             DispatchQueue.main.async {
                 self.lastReadMessageId = lastReadMessageId
             }
@@ -281,6 +224,7 @@ struct ChatLogView:View {
                 } else {
                     
                     messagesView
+                        .padding(.bottom,20)
                         .onTapGesture {
                             isFocused.toggle()
                         }

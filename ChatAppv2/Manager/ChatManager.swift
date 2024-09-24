@@ -39,6 +39,8 @@ final class ChatManager {
     
     let recentMessagesCollection = Firestore.firestore().collection("recentMessages")
 
+    private let lastReadMessagesCollection = Firestore.firestore().collection("lastReadMessages")
+
     
     func sendMessage(message:MessageModel,recipientId:String,userId:String) async{
         let chatId = IdGenerator.shared.generateUnionId(userId, recipientId)
@@ -134,6 +136,46 @@ extension ChatManager{
             try documentForRecipient.setData(from: dataForRecipient,encoder: encoder)
         } catch{
             print("UserManager/getMessages:Error storing message: \(error.localizedDescription)")
+        }
+    }
+}
+
+
+extension ChatManager{
+    func updateLastReadMessageId(userId:String,chatPartnerId:String,lastMessageId:String) async{
+        
+        let documentId = IdGenerator.shared.generateUnionId(userId, chatPartnerId)
+        let lastReadMessageReference = lastReadMessagesCollection
+            .document(documentId)
+        
+        let data : [String:Any] = ["\(FirebaseConstants.lastReadMessageId + chatPartnerId)":lastMessageId]
+        do {
+            try await lastReadMessageReference.setData(data,merge: true)
+        } catch {
+            print("Failed to mark message as read: \(error)")
+        }
+        
+    }
+    
+    
+    func getLastReadMessageId(userId:String,chatPartnerId:String,completion:@escaping (_ userLastReadMessageId:String,_ chatPartnerLastReadMessageId:String) -> Void)  -> ListenerRegistration{
+        let documentId = IdGenerator.shared.generateUnionId(userId, chatPartnerId)
+        let lastReadMessageReference = lastReadMessagesCollection
+            .document(documentId)
+
+        return lastReadMessageReference.addSnapshotListener { DocumentSnapshot, error in
+            if let error = error {
+                print("Can't get snapshot \(error.localizedDescription)")
+                return
+            }
+            guard let snapshot = DocumentSnapshot,
+                  let data = snapshot.data() else{
+                print("UserManager/getLastReadMessageId: Can't get snapshot or data")
+                return
+            }
+            let userLastReadMessageId = data["\(FirebaseConstants.lastReadMessageId + userId)"] as? String ?? ""
+            let chatPartnerLastReadMessageId = data["\(FirebaseConstants.lastReadMessageId + chatPartnerId)"] as? String ?? ""
+            completion(userLastReadMessageId,chatPartnerLastReadMessageId)
         }
     }
 }
