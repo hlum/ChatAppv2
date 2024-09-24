@@ -18,6 +18,8 @@ final class OnboardingViewModel: ObservableObject {
     @Published var isLoading:Bool = false
     @Published var progress:Double = 0.0
     
+    
+    @MainActor
     func showAlertTitle(title: String) {
         self.alertTitle = title
         showAlert.toggle()
@@ -45,8 +47,17 @@ extension OnboardingViewModel{
             let helper = SignInGoogleHelper()
             await updateProgress(0.2)
             
+            
             let tokens = try await helper.signIn()
             await updateProgress(0.4)
+            
+#warning("Change this to make sure the email is from the right school")
+//            guard let email = tokens.email,
+//                email.hasSuffix("@jec.ac.jp") else{
+//                await self.showAlertTitle(title: "学校のメール以外はログイン出来ません。")
+//                return
+//            }
+
             
             let authDataResult = try await AuthenticationManager.shared.signInWithGoogle(tokens: tokens)
             await updateProgress(0.6)
@@ -64,10 +75,10 @@ extension OnboardingViewModel{
             }
             
             await updateProgress(1.0)
-        } catch {
+        } catch let error{
             await MainActor.run {
                 // Handle error, maybe show an alert
-                self.alertTitle = "サインインに失敗しました"
+                self.alertTitle = "サインインに失敗しました\(error.localizedDescription)"
                 self.showAlert = true
             }
             throw error
@@ -438,7 +449,7 @@ extension OnboardingView {
                             onboardingState += 1
                         }
                     }else{
-                        self.isUserCurrentlyLoggedOut = false
+                        self.isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
                     }
                 } catch {
                     print("Error signing in with Google: \(error)")

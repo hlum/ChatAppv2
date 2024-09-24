@@ -57,10 +57,8 @@ final class UserManager{
             _ = try await reference.putDataAsync(data, metadata: nil) { progress in
                 guard let progress = progress else { return }
                 _ = 100.0 * Double(progress.completedUnitCount) / Double(progress.totalUnitCount)
-            }
+            }            //get the download url
             
-            
-            //get the download url
             let downloadUrl = try await reference.downloadURL()
             
             return downloadUrl.absoluteString
