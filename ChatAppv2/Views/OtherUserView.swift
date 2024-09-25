@@ -10,7 +10,7 @@ import FirebaseCore
 import SDWebImageSwiftUI
 
 final class OtherUserViewModel:ObservableObject{
-    @Published var matchLevel : Int = 3
+    @Published var matchLevel : Int = 0
     @Published var otherUser:DBUser
     @Published var user : DBUser
     

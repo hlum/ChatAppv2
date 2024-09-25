@@ -10,19 +10,41 @@ import Firebase
 import FirebaseAuth
 
 final class CreateNewMessageViewModel: ObservableObject{
-    @Published var users: [DBUser] = []
+    @Published var allUsers: [DBUser] = []
+    @Published var filteredUsers: [DBUser] = []
     @Published var errorMessage = ""
+    @Published var initialAge:Double = 18{
+        didSet{
+            filterUser()
+        }
+    }
+    @Published var finalAge:Double = 100{
+        didSet{
+            filterUser()
+        }
+    }
     
     init(){
         Task{
             await fetchAllUser()
+            filterUser()
         }
     }
     
+    
+    func filterUser(){
+        let filteredUsers = allUsers.filter { user in
+            user.age ?? 0.0 >= initialAge && user.age ?? 0.0 <= finalAge
+        }
+        
+        DispatchQueue.main.async {
+            self.filteredUsers = filteredUsers
+        }
+    }
     private func fetchAllUser() async {
         let users = await UserManager.shared.getAllUsers()
         DispatchQueue.main.async {
-            self.users = users
+            self.allUsers = users
         }
     }
 }
@@ -39,15 +61,31 @@ struct CreateNewMessageView: View {
     @State var gridItem:GridItem = GridItem(.fixed(150))
     
     var body: some View {
-        VStack(spacing:0){
-            customHeader
-            ScrollView(.vertical,showsIndicators: false) {
-                LazyVGrid(columns: [gridItem,gridItem]) {
-                    ForEach(vm.users) { otherUser in
-                        OtherUserView(user: currentUser, otherUser: otherUser)
+        NavigationStack{
+            VStack(spacing:0){
+                customHeader
+                    if showFilterMenu{
+                        VStack{
+                            Text("\(Int(vm.initialAge))歳 から \(Int(vm.finalAge))歳")
+                            AgeRangeView(initialAge: $vm.initialAge, finalAge: $vm.finalAge)
+                        }
+                        .transition(.move(edge: .top))
+                            
                     }
-                }
-                .padding(.top,20)
+                    ScrollView(.vertical,showsIndicators: false) {
+                            LazyVGrid(columns: [gridItem,gridItem]) {
+                                ForEach(showFilterMenu ? vm.filteredUsers : vm.allUsers) { otherUser in
+                                    NavigationLink {
+                                        ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false)
+                                    } label: {
+                                        OtherUserView(user: currentUser, otherUser: otherUser)
+                                            .shadow(radius: 2,y:4)
+                                    }
+                                }
+                            }
+                        .padding(.top,20)
+                    }
+                
             }
         }
     }
@@ -59,9 +97,9 @@ extension CreateNewMessageView{
             Button {
                 presentationMode.wrappedValue.dismiss()
             } label: {
-                Image(systemName: "arrow.left")
+                Image(systemName: "x.circle.fill")
                     .font(.title)
-                    .foregroundColor(.blue)
+                    .foregroundColor(.black)
             }
             Spacer()
             Text("友達を探す")
@@ -71,7 +109,9 @@ extension CreateNewMessageView{
             Spacer()
             
             Button {
+                vm.filterUser()
                 showFilterMenu.toggle()
+                
             } label: {
                 Image(systemName: "line.3.horizontal.circle")
                     .font(.title)
