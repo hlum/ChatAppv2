@@ -367,7 +367,7 @@ extension MainMessageView{
         } label: {
             HStack{
                 Spacer()
-                Text("+ New Message")
+                Text("友達を探す")
                     .font(.system(size: 16,weight: .bold))
                 Spacer()
             }
@@ -379,7 +379,9 @@ extension MainMessageView{
             .shadow(radius: 15)
         }
         .fullScreenCover(isPresented: $vm.showNewMessageView) {
-            CreateNewMessageView()
+            if let currentUser = vm.currentUserDB{
+                CreateNewMessageView(currentUser: currentUser)
+            }
         }
     }
 }

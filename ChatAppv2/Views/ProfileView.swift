@@ -74,7 +74,7 @@ final class ProfileViewModel:ObservableObject{
     }
     
     func preferenceIsSelected(_ text:String) -> Bool{
-        user?.preferences?.contains(text) == true
+        user?.preferences.contains(text) == true
     }
     
     func checkTheUser(uid:String){

@@ -27,75 +27,59 @@ final class CreateNewMessageViewModel: ObservableObject{
     }
 }
 
-
+enum filterOptions{
+    case age
+}
 
 struct CreateNewMessageView: View {
+    @State var showFilterMenu:Bool = false
+    var currentUser:DBUser
     @ObservedObject var vm = CreateNewMessageViewModel()
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.presentationMode) var presentationMode
+    @State var gridItem:GridItem = GridItem(.fixed(150))
     
     var body: some View {
-        NavigationView{
-            ScrollView {
-                Text(vm.errorMessage)
-                ForEach(vm.users){user in
-                    NavigationLink {
-                        ProfileView(passedUserId: user.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false)
+        VStack(spacing:0){
+            customHeader
+            ScrollView(.vertical,showsIndicators: false) {
+                LazyVGrid(columns: [gridItem,gridItem]) {
+                    ForEach(vm.users) { otherUser in
+                        OtherUserView(user: currentUser, otherUser: otherUser)
                     }
-                    label: {
-                        HStack(spacing: 16){
-                            AsyncImage(url: URL(string:user.photoUrl ?? "")) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width:50,height: 50)
-                                    .clipped()
-                                    .cornerRadius(50)
-                                    .overlay(RoundedRectangle(cornerRadius: 44)
-                                        .stroke(Color(.label),lineWidth: 1)
-                                    )
-                                    .shadow(radius: 5)
-                                
-                            } placeholder: {
-                                Image(.profilePic)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width:50,height: 50)
-                                    .clipped()
-                                    .cornerRadius(50)
-                                    .overlay(RoundedRectangle(cornerRadius: 44)
-                                        .stroke(Color(.label),lineWidth: 1)
-                                    )
-                                    .shadow(radius: 5)
-
-                            }
-                            
-                            Text(user.name ?? "")
-                            
-                            Spacer()
-                        }
-                        .padding(.horizontal)
-                        
-                        
-                        
-                    }
-                                       
-                    Divider()
-                        .padding(.vertical,8)
-                    
                 }
-            }
-            .navigationTitle("New Message")
-            .toolbar {
-                ToolbarItemGroup(placement: .topBarLeading) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text("Cancel")
-                    }
-
-                }
+                .padding(.top,20)
             }
         }
     }
 }
 
+extension CreateNewMessageView{
+    private var customHeader:some View{
+        HStack{
+            Button {
+                presentationMode.wrappedValue.dismiss()
+            } label: {
+                Image(systemName: "arrow.left")
+                    .font(.title)
+                    .foregroundColor(.blue)
+            }
+            Spacer()
+            Text("友達を探す")
+                .font(.title3)
+                .fontWeight(.bold)
+            
+            Spacer()
+            
+            Button {
+                showFilterMenu.toggle()
+            } label: {
+                Image(systemName: "line.3.horizontal.circle")
+                    .font(.title)
+            }
+        }
+        .padding(.horizontal)
+        .frame(maxWidth: .infinity)
+        .frame(height: 55)
+        
+    }
+}
