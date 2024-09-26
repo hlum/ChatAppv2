@@ -19,18 +19,19 @@ class MainViewMessageViewModel:ObservableObject{
     
     private var messagesListener:ListenerRegistration?
     private var lastReadMessageIdListener:ListenerRegistration?
-    
+
     
     
     init(){
         self.isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
-        }
 
+    }
     
     func fetchUserData()async {
         await handledLoading(progress: 0.1)
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser()else {
             print("MainViewMessageViewModel:Can't fetch user data")
+            isUserCurrentlyLoggedOut = true
             return
         }
         await handledLoading(progress: 0.15)
@@ -53,10 +54,8 @@ class MainViewMessageViewModel:ObservableObject{
     
     func fetchRecentMessages() {
         guard let userId = try? AuthenticationManager.shared.getAuthenticatedUser().uid else {
+            isUserCurrentlyLoggedOut = true
             return
-        }
-        Task{
-            await handledLoading(progress: 0.4)
         }
         messagesListener = ChatManager.shared.recentMessagesCollection
             .document(userId)
@@ -182,6 +181,7 @@ struct MainMessageView: View {
                     }
                 }
                 .onAppear(perform: {
+                    
                     Task{
                         await vm.fetchUserData()
                         vm.fetchRecentMessages()
@@ -367,7 +367,7 @@ extension MainMessageView{
         } label: {
             HStack{
                 Spacer()
-                Text("+ New Message")
+                Text("友達を探す")
                     .font(.system(size: 16,weight: .bold))
                 Spacer()
             }
@@ -379,7 +379,9 @@ extension MainMessageView{
             .shadow(radius: 15)
         }
         .fullScreenCover(isPresented: $vm.showNewMessageView) {
-            CreateNewMessageView()
+            if let currentUser = vm.currentUserDB{
+                CreateNewMessageView(currentUser: currentUser)
+            }
         }
     }
 }

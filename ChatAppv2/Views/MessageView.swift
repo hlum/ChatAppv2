@@ -23,6 +23,7 @@ struct MessageView: View {
                         .background(Color.blue)
                         .foregroundColor(.white)
                         .cornerRadius(10)
+                        .textSelection(.enabled)
                 }.padding(.horizontal)
             }else{
                 HStack{
