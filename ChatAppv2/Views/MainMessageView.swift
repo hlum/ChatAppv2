@@ -7,7 +7,7 @@ class MainViewMessageViewModel:ObservableObject{
     @Published var showLogOutOption : Bool = false
     @Published var currentUserDB : DBUser? = nil // currentUser
     @Published var isUserCurrentlyLoggedOut:Bool = true
-    @Published var showNewMessageView:Bool = false
+    @Published var showFindNewFriendView:Bool = false
     @Published var recentMessages: [MessageModel] = []
     
     
@@ -41,8 +41,11 @@ class MainViewMessageViewModel:ObservableObject{
         await handledLoading(progress: 0.3)
 
             DispatchQueue.main.async{
+                
                 self.currentUserDB = user
             }
+        await handledLoading(progress: 1)
+
     }
     
     func logOut(){
@@ -172,13 +175,34 @@ struct MainMessageView: View {
                         customNavBar
                             .foregroundStyle(Color(.black))
                     }
+                    ZStack{
+                        ScrollView{
+                            messagesView
+                                .refreshable {
+                                    await vm.refreshData()
+                                }
+                        }
+                        if vm.recentMessages.isEmpty{
+                            VStack{
+                                Image(systemName: "plus.message.fill")
+                                    .font(.system(size: 100))
+                                    .foregroundStyle(Color.gray)
+                                    .padding()
+                                
+                                Text("誰かに話しかけてみませんか？")
+                                    .font(.headline)
+                                    .foregroundStyle(Color.gray)
+                            }
+                            
+                        }
+                    }
+                    .onTapGesture {
+                        if let currentUser = vm.currentUserDB{
+                            vm.showFindNewFriendView = true
+                        }
+                    }
 
-                    ScrollView{
-                        messagesView
-                    }
-                    .refreshable {
-                        await vm.refreshData()
-                    }
+                    
                 }
                 .onAppear(perform: {
                     
@@ -363,7 +387,7 @@ extension MainMessageView{
     
     private var newMessageButton:some View{
         Button {
-            vm.showNewMessageView = true
+            vm.showFindNewFriendView = true
         } label: {
             HStack{
                 Spacer()
@@ -378,7 +402,7 @@ extension MainMessageView{
             .padding()
             .shadow(radius: 15)
         }
-        .fullScreenCover(isPresented: $vm.showNewMessageView) {
+        .fullScreenCover(isPresented: $vm.showFindNewFriendView) {
             if let currentUser = vm.currentUserDB{
                 FindNewFriendView(currentUser: currentUser)
             }
