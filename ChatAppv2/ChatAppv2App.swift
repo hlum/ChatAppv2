@@ -11,11 +11,6 @@ import Firebase
 @main
 struct ChatAppv2App: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-
-    init() {
-        FirebaseApp.configure() // Configure Firebase once
-    }
-
     var body: some Scene {
         WindowGroup {
             MainMessageView()
@@ -27,6 +22,7 @@ struct ChatAppv2App: App {
         
         func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
             // Your custom configuration
+            FirebaseApp.configure()
             return true
         }
     }

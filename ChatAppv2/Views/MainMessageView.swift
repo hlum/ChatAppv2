@@ -48,7 +48,9 @@ class MainViewMessageViewModel:ObservableObject{
         await handledLoading(progress: 0.1)
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser()else {
             print("MainViewMessageViewModel:Can't fetch user data")
-            isUserCurrentlyLoggedOut = true
+            DispatchQueue.main.async {
+                self.isUserCurrentlyLoggedOut = true
+            }
             return
         }
 
