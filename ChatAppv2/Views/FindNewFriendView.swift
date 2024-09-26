@@ -9,7 +9,7 @@ import SwiftUI
 import Firebase
 import FirebaseAuth
 
-final class CreateNewMessageViewModel: ObservableObject{
+final class FindNewFriendsView: ObservableObject{
     @Published var allUsers: [DBUser] = []
     @Published var filteredUsers: [DBUser] = []
     @Published var errorMessage = ""
@@ -49,10 +49,10 @@ final class CreateNewMessageViewModel: ObservableObject{
     }
 }
 
-struct CreateNewMessageView: View {
+struct FindNewFriendView: View {
     @State var showFilterMenu:Bool = false
     var currentUser:DBUser
-    @ObservedObject var vm = CreateNewMessageViewModel()
+    @ObservedObject var vm = FindNewFriendsView()
     @Environment(\.presentationMode) var presentationMode
     @State var gridItem:GridItem = GridItem(.fixed(150))
     
@@ -87,7 +87,7 @@ struct CreateNewMessageView: View {
     }
 }
 
-extension CreateNewMessageView{
+extension FindNewFriendView{
     private var customHeader:some View{
         HStack{
             Button {

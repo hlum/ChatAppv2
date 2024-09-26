@@ -380,7 +380,7 @@ extension MainMessageView{
         }
         .fullScreenCover(isPresented: $vm.showNewMessageView) {
             if let currentUser = vm.currentUserDB{
-                CreateNewMessageView(currentUser: currentUser)
+                FindNewFriendView(currentUser: currentUser)
             }
         }
     }
