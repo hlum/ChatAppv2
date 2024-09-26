@@ -74,7 +74,7 @@ final class ProfileViewModel:ObservableObject{
     }
     
     func preferenceIsSelected(_ text:String) -> Bool{
-        user?.preferences?.contains(text) == true
+        user?.preferences.contains(text) == true
     }
     
     func checkTheUser(uid:String){
@@ -214,11 +214,12 @@ struct ProfileView: View {
                         }
                     
                     // User Email
-                        if let email = vm.user?.email {
-                            Text(email)
+                        if let email = vm.user?.email{
+                            Text(email.replacingOccurrences(of: "@jec.ac.jp", with: ""))
                                 .font(.subheadline)
                                 .foregroundColor(subtitleColor)
                         }
+                    
                     
                     // User Age
                         if let age = vm.user?.age {
@@ -410,6 +411,16 @@ struct ProfileView: View {
         ZStack{
             Color.customBlack.ignoresSafeArea()
             VStack(spacing: 20) {
+                HStack{
+                    Text("興味のある分野を選択してください")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 40)
+                .background(.customBlack)
                 ScrollView {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 20) {
                         ForEach(interests, id: \.self) { interest in
@@ -598,13 +609,25 @@ extension ProfileView{
 
 
 let interests = [
+    // 元のリスト
     "スポーツ", "音楽", "映画", "読書", "料理", "旅行", "ゲーム", "アート",
     "写真撮影", "フィットネス", "ヨガ", "ダンス", "ハイキング", "キャンプ", "ガーデニング",
     "釣り", "ボランティア活動", "登山", "自転車", "ボードゲーム", "アニメ", "マンガ",
     "瞑想", "書道", "手芸", "ドローン", "カフェ巡り", "DIY", "サイクリング", "プログラミング",
-    "言語学習", "ペットの世話"
+    "言語学習", "ペットの世話", "謎解き",
+    // 前回追加したもの
+    "バードウォッチング", "ワイン試飲", "陶芸", "スキューバダイビング", "天体観測",
+    "ジグソーパズル", "コスプレ", "ビデオ編集", "盆栽", "クラシック音楽鑑賞",
+    // 新しく追加する趣味
+    "茶道", "華道", "囲碁", "将棋", "カリグラフィー", "折り紙", "切り絵", "漫才", "落語",
+    "篆刻", "剣道", "弓道", "相撲観戦", "歌舞伎鑑賞", "能・狂言鑑賞", "和太鼓",
+    "三味線", "琴", "尺八", "日本舞踊", "着物の着付け", "香道", "パン作り", "そば打ち",
+    "フラワーアレンジメント", "ミニチュア製作", "ドールハウス作り", "鉄道模型",
+    "切手収集", "コイン収集", "アンティーク収集", "ワインセラー管理", "ウイスキー蒐集",
+    "ハーブ栽培", "盆景", "苔玉作り", "テラリウム作り", "昆虫採集", "化石発掘",
+    "星座観察", "気象観測", "グランピング", "サバイバルキャンプ", "ロッククライミング",
+    "パラグライダー", "スカイダイビング", "バンジージャンプ", "カヌー", "ラフティング"
 ]
-
 #Preview {
     NavigationStack{
         ProfileView(passedUserId: "", isUserCurrentlyLogOut: .constant(false), isFromChatView: false)

@@ -26,8 +26,14 @@ final class SignInGoogleHelper{
         let name:String? = gidSignInResult.user.profile?.name
         let email:String? = gidSignInResult.user.profile?.email
         
+        
+        
         let tokens = GoogleSignInResultModel(idToken: idToken, acessToken: acessToken,name: name,email: email)
         
         return tokens
     }
+}
+
+enum customSignInError:Error{
+    case invalidEmail
 }

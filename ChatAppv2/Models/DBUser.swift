@@ -15,7 +15,7 @@ struct DBUser:Identifiable, Codable , Hashable {
     let email : String?
     let photoUrl : String?
     let dateCreated : Timestamp?
-    let preferences:[String]?
+    let preferences:[String]
     let age : Double?
     let chatIds:[String]
     
@@ -54,7 +54,7 @@ struct DBUser:Identifiable, Codable , Hashable {
             }
         }()
         self.dateCreated = recentMessage.dateCreated
-        self.preferences = nil
+        self.preferences = []
         self.name = {
             if recentMessage.senderEmail == currentUser.email{
                 return recentMessage.recieverName
@@ -94,7 +94,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.email = authDataResult.email
         self.photoUrl = authDataResult.photoURL?.description
         self.dateCreated = Timestamp(date: Date())
-        self.preferences = nil
+        self.preferences = []
         self.name = nil
         self.age = nil
         self.chatIds = []
@@ -136,7 +136,7 @@ struct DBUser:Identifiable, Codable , Hashable {
          self.email = try container.decodeIfPresent(String.self, forKey: .email)
          self.photoUrl = try container.decodeIfPresent(String.self, forKey: .photoUrl)
         self.dateCreated = try container.decodeIfPresent(Timestamp.self, forKey: .dateCreated)
-         self.preferences = try container.decodeIfPresent([String].self, forKey: .preferences)
+        self.preferences = try container.decodeIfPresent([String].self, forKey: .preferences) ?? []
          self.age = try container.decodeIfPresent(Double.self, forKey: .age)
         self.chatIds = try container.decodeIfPresent([String].self, forKey: .chatIds) ?? []
      }

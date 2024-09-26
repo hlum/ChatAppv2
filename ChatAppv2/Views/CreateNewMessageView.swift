@@ -10,92 +10,112 @@ import Firebase
 import FirebaseAuth
 
 final class CreateNewMessageViewModel: ObservableObject{
-    @Published var users: [DBUser] = []
+    @Published var allUsers: [DBUser] = []
+    @Published var filteredUsers: [DBUser] = []
     @Published var errorMessage = ""
+    @Published var initialAge:Double = 18{
+        didSet{
+            filterUser()
+        }
+    }
+    @Published var finalAge:Double = 100{
+        didSet{
+            filterUser()
+        }
+    }
     
     init(){
         Task{
             await fetchAllUser()
+            filterUser()
         }
     }
     
+    
+    func filterUser(){
+        let filteredUsers = allUsers.filter { user in
+            user.age ?? 0.0 >= initialAge && user.age ?? 0.0 <= finalAge
+        }
+        
+        DispatchQueue.main.async {
+            self.filteredUsers = filteredUsers
+        }
+    }
     private func fetchAllUser() async {
         let users = await UserManager.shared.getAllUsers()
         DispatchQueue.main.async {
-            self.users = users
+            self.allUsers = users
         }
     }
 }
-
-
 
 struct CreateNewMessageView: View {
+    @State var showFilterMenu:Bool = false
+    var currentUser:DBUser
     @ObservedObject var vm = CreateNewMessageViewModel()
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.presentationMode) var presentationMode
+    @State var gridItem:GridItem = GridItem(.fixed(150))
     
     var body: some View {
-        NavigationView{
-            ScrollView {
-                Text(vm.errorMessage)
-                ForEach(vm.users){user in
-                    NavigationLink {
-                        ProfileView(passedUserId: user.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false)
-                    }
-                    label: {
-                        HStack(spacing: 16){
-                            AsyncImage(url: URL(string:user.photoUrl ?? "")) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width:50,height: 50)
-                                    .clipped()
-                                    .cornerRadius(50)
-                                    .overlay(RoundedRectangle(cornerRadius: 44)
-                                        .stroke(Color(.label),lineWidth: 1)
-                                    )
-                                    .shadow(radius: 5)
-                                
-                            } placeholder: {
-                                Image(.profilePic)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width:50,height: 50)
-                                    .clipped()
-                                    .cornerRadius(50)
-                                    .overlay(RoundedRectangle(cornerRadius: 44)
-                                        .stroke(Color(.label),lineWidth: 1)
-                                    )
-                                    .shadow(radius: 5)
-
-                            }
-                            
-                            Text(user.name ?? "")
-                            
-                            Spacer()
+        NavigationStack{
+            VStack(spacing:0){
+                customHeader
+                    if showFilterMenu{
+                        VStack{
+                            Text("\(Int(vm.initialAge))歳 から \(Int(vm.finalAge))歳")
+                            AgeRangeView(initialAge: $vm.initialAge, finalAge: $vm.finalAge)
                         }
-                        .padding(.horizontal)
-                        
-                        
-                        
+                        .transition(.move(edge: .top))
+                            
                     }
-                                       
-                    Divider()
-                        .padding(.vertical,8)
-                    
-                }
-            }
-            .navigationTitle("New Message")
-            .toolbar {
-                ToolbarItemGroup(placement: .topBarLeading) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text("Cancel")
+                    ScrollView(.vertical,showsIndicators: false) {
+                            LazyVGrid(columns: [gridItem,gridItem]) {
+                                ForEach(showFilterMenu ? vm.filteredUsers : vm.allUsers) { otherUser in
+                                    NavigationLink {
+                                        ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false)
+                                    } label: {
+                                        OtherUserView(user: currentUser, otherUser: otherUser)
+                                            .shadow(radius: 2,y:4)
+                                    }
+                                }
+                            }
+                        .padding(.top,20)
                     }
-
-                }
+                
             }
         }
     }
 }
 
+extension CreateNewMessageView{
+    private var customHeader:some View{
+        HStack{
+            Button {
+                presentationMode.wrappedValue.dismiss()
+            } label: {
+                Image(systemName: "x.circle.fill")
+                    .font(.title)
+                    .foregroundColor(.black)
+            }
+            Spacer()
+            Text("友達を探す")
+                .font(.title3)
+                .fontWeight(.bold)
+            
+            Spacer()
+            
+            Button {
+                vm.filterUser()
+                showFilterMenu.toggle()
+                
+            } label: {
+                Image(systemName: "line.3.horizontal.circle")
+                    .font(.title)
+            }
+        }
+        .padding(.horizontal)
+        .frame(maxWidth: .infinity)
+        .frame(height: 55)
+        
+    }
+}

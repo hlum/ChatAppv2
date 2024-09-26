@@ -9,6 +9,7 @@ final class OnboardingViewModel: ObservableObject {
     @Published var imageSelection:PhotosPickerItem? = nil
     @Published var profileImage:UIImage? = nil
     
+//    var tokens:GoogleSignInResultModel? = nil
     
     
     @Published var alertTitle: String = ""
@@ -18,6 +19,8 @@ final class OnboardingViewModel: ObservableObject {
     @Published var isLoading:Bool = false
     @Published var progress:Double = 0.0
     
+    
+    @MainActor
     func showAlertTitle(title: String) {
         self.alertTitle = title
         showAlert.toggle()
@@ -45,12 +48,21 @@ extension OnboardingViewModel{
             let helper = SignInGoogleHelper()
             await updateProgress(0.2)
             
+            
             let tokens = try await helper.signIn()
             await updateProgress(0.4)
             
-            let authDataResult = try await AuthenticationManager.shared.signInWithGoogle(tokens: tokens)
-            await updateProgress(0.6)
+#warning("Change this to make sure the email is from the right school")
+//            guard let email = tokens.email,
+//                email.hasSuffix("@jec.ac.jp") else{
+//                await self.showAlertTitle(title: "学校のメール以外はログイン出来ません。")
+//                return
+//            }
+
             
+            await updateProgress(0.6)
+            let authDataResult = try await AuthenticationManager.shared.signInWithGoogle(tokens:tokens)
+
             // Check if the user is new
             let isNewUser = !(try await UserManager.shared.checkIfUserExistInDatabase(userId: authDataResult.uid))
             await updateProgress(0.8)
@@ -64,10 +76,10 @@ extension OnboardingViewModel{
             }
             
             await updateProgress(1.0)
-        } catch {
+        } catch let error{
             await MainActor.run {
                 // Handle error, maybe show an alert
-                self.alertTitle = "サインインに失敗しました"
+                self.alertTitle = "サインインに失敗しました\(error.localizedDescription)"
                 self.showAlert = true
             }
             throw error
@@ -158,14 +170,26 @@ struct OnboardingView: View {
     @Binding var isUserCurrentlyLoggedOut : Bool
     
     let interests = [
+        // 元のリスト
         "スポーツ", "音楽", "映画", "読書", "料理", "旅行", "ゲーム", "アート",
         "写真撮影", "フィットネス", "ヨガ", "ダンス", "ハイキング", "キャンプ", "ガーデニング",
         "釣り", "ボランティア活動", "登山", "自転車", "ボードゲーム", "アニメ", "マンガ",
         "瞑想", "書道", "手芸", "ドローン", "カフェ巡り", "DIY", "サイクリング", "プログラミング",
-        "言語学習", "ペットの世話"
+        "言語学習", "ペットの世話", "謎解き",
+        // 前回追加したもの
+        "バードウォッチング", "ワイン試飲", "陶芸", "スキューバダイビング", "天体観測",
+        "ジグソーパズル", "コスプレ", "ビデオ編集", "盆栽", "クラシック音楽鑑賞",
+        // 新しく追加する趣味
+        "茶道", "華道", "囲碁", "将棋", "カリグラフィー", "折り紙", "切り絵", "漫才", "落語",
+        "篆刻", "剣道", "弓道", "相撲観戦", "歌舞伎鑑賞", "能・狂言鑑賞", "和太鼓",
+        "三味線", "琴", "尺八", "日本舞踊", "着物の着付け", "香道", "パン作り", "そば打ち",
+        "フラワーアレンジメント", "ミニチュア製作", "ドールハウス作り", "鉄道模型",
+        "切手収集", "コイン収集", "アンティーク収集", "ワインセラー管理", "ウイスキー蒐集",
+        "ハーブ栽培", "盆景", "苔玉作り", "テラリウム作り", "昆虫採集", "化石発掘",
+        "星座観察", "気象観測", "グランピング", "サバイバルキャンプ", "ロッククライミング",
+        "パラグライダー", "スカイダイビング", "バンジージャンプ", "カヌー", "ラフティング"
     ]
     var body: some View {
-            
             ZStack {
                 Color.customBlack.ignoresSafeArea()
                 ZStack {
@@ -192,7 +216,8 @@ struct OnboardingView: View {
                 }
                 VStack {
                     Spacer()
-                    bottomButton
+                    
+                    signUpButton
                 }
                 .padding(30)
                 
@@ -224,7 +249,7 @@ struct OnboardingView: View {
  }
 
 extension OnboardingView {
-    private var bottomButton: some View {
+    private var signUpButton: some View {
         Text(onboardingState == 0 ? "サインアップ" :
              onboardingState == 4 ? "完了" :
              "次へ")
@@ -438,7 +463,7 @@ extension OnboardingView {
                             onboardingState += 1
                         }
                     }else{
-                        self.isUserCurrentlyLoggedOut = false
+                        self.isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
                     }
                 } catch {
                     print("Error signing in with Google: \(error)")
