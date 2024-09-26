@@ -6,7 +6,7 @@ import SDWebImageSwiftUI
 class MainViewMessageViewModel:ObservableObject{
     @Published var showLogOutOption : Bool = false
     @Published var currentUserDB : DBUser? = nil // currentUser
-    @Published var isUserCurrentlyLoggedOut:Bool = true
+    @Published var isUserCurrentlyLoggedOut:Bool = false
     @Published var showNewMessageView:Bool = false
     @Published var recentMessages: [MessageModel] = []
     
@@ -23,8 +23,25 @@ class MainViewMessageViewModel:ObservableObject{
     
     
     init(){
-        self.isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
+        Task{
+            let userIsInDatabase = await userDataIsInDatabase()
+            DispatchQueue.main.async {
+                self.isUserCurrentlyLoggedOut =  !userIsInDatabase
+            }
 
+        }
+    }
+    
+    func userDataIsInDatabase() async -> Bool {
+        guard let user = try? AuthenticationManager.shared.getAuthenticatedUser()else{
+            print("Can't get current user")
+            return false
+        }
+        do {
+            return try await UserManager.shared.checkIfUserExistInDatabase(userId: user.uid)
+        } catch {
+            return false
+        }
     }
     
     func fetchUserData()async {
@@ -34,15 +51,16 @@ class MainViewMessageViewModel:ObservableObject{
             isUserCurrentlyLoggedOut = true
             return
         }
-        await handledLoading(progress: 0.15)
+
 
             let user = try? await UserManager.shared.getUser(userId: authDataResult.uid)
         
-        await handledLoading(progress: 0.3)
+        await handledLoading(progress: 0.9)
 
             DispatchQueue.main.async{
                 self.currentUserDB = user
             }
+        await handledLoading(progress: 1)
     }
     
     func logOut(){
@@ -104,9 +122,6 @@ class MainViewMessageViewModel:ObservableObject{
                 updatedMessage.isRead = true
             } else {
                 updatedMessage.isRead = false
-            }
-            Task{
-                await self.handledLoading(progress: 0.8)
             }
 
             self.updateOrInsertMessage(updatedMessage)

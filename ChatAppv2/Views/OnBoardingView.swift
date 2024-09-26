@@ -9,6 +9,7 @@ final class OnboardingViewModel: ObservableObject {
     @Published var imageSelection:PhotosPickerItem? = nil
     @Published var profileImage:UIImage? = nil
     
+//    var tokens:GoogleSignInResultModel? = nil
     
     
     @Published var alertTitle: String = ""
@@ -59,9 +60,9 @@ extension OnboardingViewModel{
 //            }
 
             
-            let authDataResult = try await AuthenticationManager.shared.signInWithGoogle(tokens: tokens)
             await updateProgress(0.6)
-            
+            let authDataResult = try await AuthenticationManager.shared.signInWithGoogle(tokens:tokens)
+
             // Check if the user is new
             let isNewUser = !(try await UserManager.shared.checkIfUserExistInDatabase(userId: authDataResult.uid))
             await updateProgress(0.8)
@@ -215,7 +216,8 @@ struct OnboardingView: View {
                 }
                 VStack {
                     Spacer()
-                    bottomButton
+                    
+                    signUpButton
                 }
                 .padding(30)
                 
@@ -247,7 +249,7 @@ struct OnboardingView: View {
  }
 
 extension OnboardingView {
-    private var bottomButton: some View {
+    private var signUpButton: some View {
         Text(onboardingState == 0 ? "サインアップ" :
              onboardingState == 4 ? "完了" :
              "次へ")
