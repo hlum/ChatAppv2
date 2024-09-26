@@ -49,10 +49,6 @@ final class CreateNewMessageViewModel: ObservableObject{
     }
 }
 
-enum filterOptions{
-    case age
-}
-
 struct CreateNewMessageView: View {
     @State var showFilterMenu:Bool = false
     var currentUser:DBUser
