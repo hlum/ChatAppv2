@@ -90,17 +90,10 @@ struct FindNewFriendView: View {
 extension FindNewFriendView{
     private var customHeader:some View{
         HStack{
-            Button {
-                presentationMode.wrappedValue.dismiss()
-            } label: {
-                Image(systemName: "x.circle.fill")
-                    .font(.title)
-                    .foregroundColor(.black)
-            }
-            Spacer()
-            Text("友達を探す")
+              Text("友達を探す")
                 .font(.title3)
                 .fontWeight(.bold)
+                .padding(.leading)
             
             Spacer()
             

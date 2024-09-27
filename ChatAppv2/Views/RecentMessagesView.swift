@@ -162,7 +162,7 @@ class MainViewMessageViewModel:ObservableObject{
 }
 
 
-struct MainMessageView: View {
+struct RecentMessagesView: View {
     @StateObject var vm = MainViewMessageViewModel()
     var body: some View {
         NavigationStack{
@@ -243,7 +243,7 @@ struct MainMessageView: View {
 
 //MARKS: View extensions
 
-extension MainMessageView{
+extension RecentMessagesView{
     
     
     private var customNavBar:some View{
