@@ -10,6 +10,7 @@ import Firebase
 import FirebaseAuth
 
 final class FindNewFriendsView: ObservableObject{
+    @Published var currentUser:DBUser? = nil
     @Published var allUsers: [DBUser] = []
     @Published var filteredUsers: [DBUser] = []
     @Published var errorMessage = ""
@@ -26,9 +27,32 @@ final class FindNewFriendsView: ObservableObject{
     
     init(){
         Task{
+            await getCurrentUser()
             await fetchAllUser()
-            filterUser()
         }
+    }
+    
+    func getCurrentUser() async{
+        guard let user = try? AuthenticationManager.shared.getAuthenticatedUser() else{
+            DispatchQueue.main.async {
+                self.currentUser =  nil
+            }
+            return
+        }
+        guard let dbUser = try? await UserManager.shared.getUser(userId: user.uid) else{
+            DispatchQueue.main.async {
+                self.currentUser =  nil
+            }
+            return
+        }
+        DispatchQueue.main.async {
+            self.currentUser =  dbUser
+        }
+    }
+    
+    func refresh()async{
+        await getCurrentUser()
+        await fetchAllUser()
     }
     
     
@@ -41,6 +65,8 @@ final class FindNewFriendsView: ObservableObject{
             self.filteredUsers = filteredUsers
         }
     }
+    
+    
     private func fetchAllUser() async {
         let users = await UserManager.shared.getAllUsers()
         DispatchQueue.main.async {
@@ -52,7 +78,6 @@ final class FindNewFriendsView: ObservableObject{
 struct FindNewFriendView: View {
     
     @State var showFilterMenu:Bool = false
-    var currentUser:DBUser
     @ObservedObject var vm = FindNewFriendsView()
     @Environment(\.presentationMode) var presentationMode
     @State var gridItem:GridItem = GridItem(.fixed(150))
@@ -75,12 +100,18 @@ struct FindNewFriendView: View {
                                     NavigationLink {
                                         ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false)
                                     } label: {
-                                        OtherUserView(user: currentUser, otherUser: otherUser)
-                                            .shadow(radius: 2,y:4)
+                                        if let user = vm.currentUser{
+                                            OtherUserView(user: user, otherUser: otherUser)
+                                                .shadow(radius: 2,y:4)
+                                        }
+                                        
                                     }
                                 }
                             }
                         .padding(.top,20)
+                    }
+                    .refreshable {
+                        await vm.refresh()
                     }
                 
             }

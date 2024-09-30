@@ -69,7 +69,7 @@ struct MainTabView: View {
                 RecentMessagesView(tabSelection: $tabSelection)
                     .tag(0)
                 if let currentUser = vm.user{
-                    FindNewFriendView(currentUser: currentUser)
+                    FindNewFriendView()
                         .tag(1)
                     
                     ProfileView(passedUserId: currentUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false)

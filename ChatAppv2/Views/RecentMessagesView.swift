@@ -6,7 +6,7 @@ import SDWebImageSwiftUI
 class MainViewMessageViewModel:ObservableObject{
     @Published var showLogOutOption : Bool = false
     @Published var currentUserDB : DBUser? = nil // currentUser
-    @Published var isUserCurrentlyLoggedOut:Bool = true
+    @Published var isUserCurrentlyLoggedOut:Bool = false
     @Published var showFindNewFriendView:Bool = false
     @Published var recentMessages: [MessageModel] = []
     
@@ -211,8 +211,8 @@ struct RecentMessagesView: View {
                                     .foregroundStyle(Color.gray)
                             }
                             .onTapGesture {
-                                if let currentUser = vm.currentUserDB{
-                                    tabSelection = 1
+                                if let _ = vm.currentUserDB{
+                                    tabSelection = 2
                                     print("Clicked")
                                 }
 

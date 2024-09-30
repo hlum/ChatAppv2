@@ -26,7 +26,7 @@ final class OtherUserViewModel:ObservableObject{
         let userPreferences = user.preferences
         for userPreference in userPreferences{
             if othersPreferences.contains(userPreference){
-                if matchLevel < 8{
+                if matchLevel < 7{
                     matchLevel += 1
                 }
             }
