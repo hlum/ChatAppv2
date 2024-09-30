@@ -232,7 +232,45 @@ struct ProfileView: View {
                     
                     Spacer()
                     
-                    
+                    if vm.editingOption == nil && !vm.isLoading && vm.isUser {
+                        signOutButton
+                    }
+                    if !vm.isUser{
+                        if let user = vm.user{
+                            if isFromChatView{
+                                Button {
+                                    presentationMode.wrappedValue.dismiss()
+                                } label: {
+                                    Text("メッセージを送る")
+                                        .font(.headline)
+                                        .padding()
+                                        .frame(maxWidth: .infinity)
+                                        .background(.blue)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(10)
+                                        .shadow(radius: 20)
+                                }
+                            }
+                            else{
+                                NavigationLink {
+                                    ChatLogView(recipient: user)
+                                } label: {
+                                    Text("メッセージを送る")
+                                        .font(.headline)
+                                        .padding()
+                                        .frame(maxWidth: .infinity)
+                                        .background(.blue)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(10)
+                                        .shadow(radius: 20)
+                                }
+                            }
+                            
+                            Spacer()
+                        }
+
+                    }
+
                 }
                 .padding()
                 .background(Color.customBlack)
@@ -281,60 +319,6 @@ struct ProfileView: View {
                 }
             }
         }
-        .overlay(alignment: .bottom, content: {
-            if vm.editingOption == nil && !vm.isLoading && vm.isUser {
-                Button {
-                    vm.logOut()
-                    isUserCurrentlyLogOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
-                    presentationMode.wrappedValue.dismiss()
-                } label: {
-                    Text("サインアウトする")
-                        .font(.headline)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(.red)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                        .padding()
-                        .shadow(radius: 20)
-                }
-            }
-            if !vm.isUser{
-                if let user = vm.user{
-                    if isFromChatView{
-                        Button {
-                            presentationMode.wrappedValue.dismiss()
-                        } label: {
-                            Text("メッセージを送る")
-                                .font(.headline)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(10)
-                                .padding()
-                                .shadow(radius: 20)
-                        }
-                    }
-                    else{
-                        NavigationLink {
-                            ChatLogView(recipient: user)
-                        } label: {
-                            Text("メッセージを送る")
-                                .font(.headline)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(10)
-                                .padding()
-                                .shadow(radius: 20)
-                        }
-                    }
-                }
-
-            }
-        })
         .toolbar(.hidden)
     }
     
@@ -471,6 +455,24 @@ struct ProfileView: View {
                 
             }
 
+        }
+    }
+    
+    private var signOutButton:some View{
+        Button {
+            vm.logOut()
+            isUserCurrentlyLogOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
+            presentationMode.wrappedValue.dismiss()
+        } label: {
+            Text("サインアウトする")
+                .font(.headline)
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(.red)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                .padding()
+                .shadow(radius: 20)
         }
     }
 
