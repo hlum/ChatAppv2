@@ -23,9 +23,26 @@ class MainViewMessageViewModel:ObservableObject{
     
     
     init(){
-        self.isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
-
+        Task{
+            let isUserCurrentlyLoggedOut = await !checkTheUserIsInDataBase()
+            DispatchQueue.main.async {
+                self.isUserCurrentlyLoggedOut = isUserCurrentlyLoggedOut
+            }
+        }
     }
+    
+    func checkTheUserIsInDataBase() async -> Bool {
+           guard let user = try? AuthenticationManager.shared.getAuthenticatedUser()else{
+               print("Can't get current user")
+               return false
+           }
+           do {
+               return try await UserManager.shared.checkIfUserExistInDatabase(userId: user.uid)
+           } catch {
+               return false
+           }
+       }
+    
     
     func fetchUserData()async {
         await handledLoading(progress: 0.1)
@@ -163,18 +180,18 @@ class MainViewMessageViewModel:ObservableObject{
 
 
 struct RecentMessagesView: View {
+    @Binding var tabSelection : Int
     @StateObject var vm = MainViewMessageViewModel()
     var body: some View {
         NavigationStack{
             
             ZStack{
                 VStack{
-                    NavigationLink {
-                        ProfileView(passedUserId: vm.currentUserDB?.userId ?? "", isUserCurrentlyLogOut: $vm.isUserCurrentlyLoggedOut, isFromChatView: false)
-                    } label: {
                         customNavBar
                             .foregroundStyle(Color(.black))
-                    }
+                            .onTapGesture {
+                                tabSelection = 2
+                            }
                     ZStack{
                         ScrollView{
                             messagesView
@@ -193,13 +210,15 @@ struct RecentMessagesView: View {
                                     .font(.headline)
                                     .foregroundStyle(Color.gray)
                             }
+                            .onTapGesture {
+                                if let currentUser = vm.currentUserDB{
+                                    tabSelection = 1
+                                    print("Clicked")
+                                }
+
                             
                         }
                     }
-                    .onTapGesture {
-                        if let currentUser = vm.currentUserDB{
-                            vm.showFindNewFriendView = true
-                        }
                     }
 
                     
@@ -214,8 +233,6 @@ struct RecentMessagesView: View {
                 .onDisappear {
                           vm.cancelListeners()
                       }
-                
-                .overlay(newMessageButton,alignment: .bottom)
                 .toolbar(.hidden)
                 
                 if vm.isLoading {
@@ -385,28 +402,5 @@ extension RecentMessagesView{
         }
 }
     
-    private var newMessageButton:some View{
-        Button {
-            vm.showFindNewFriendView = true
-        } label: {
-            HStack{
-                Spacer()
-                Text("友達を探す")
-                    .font(.system(size: 16,weight: .bold))
-                Spacer()
-            }
-            .foregroundStyle(Color(.white))
-            .padding(.vertical)
-            .background(.blue)
-            .cornerRadius(32)
-            .padding()
-            .shadow(radius: 15)
-        }
-        .fullScreenCover(isPresented: $vm.showFindNewFriendView) {
-            if let currentUser = vm.currentUserDB{
-                FindNewFriendView(currentUser: currentUser)
-            }
-        }
-    }
 }
 

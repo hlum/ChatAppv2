@@ -50,6 +50,7 @@ final class FindNewFriendsView: ObservableObject{
 }
 
 struct FindNewFriendView: View {
+    
     @State var showFilterMenu:Bool = false
     var currentUser:DBUser
     @ObservedObject var vm = FindNewFriendsView()
