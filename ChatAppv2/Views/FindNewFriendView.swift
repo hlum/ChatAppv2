@@ -76,11 +76,10 @@ final class FindNewFriendsView: ObservableObject{
 }
 
 struct FindNewFriendView: View {
-    
     @State var showFilterMenu:Bool = false
     @ObservedObject var vm = FindNewFriendsView()
-    @Environment(\.presentationMode) var presentationMode
     @State var gridItem:GridItem = GridItem(.fixed(150))
+    @State var otherUser:DBUser? = nil
     
     var body: some View {
         NavigationStack{
@@ -97,8 +96,8 @@ struct FindNewFriendView: View {
                     ScrollView(.vertical,showsIndicators: false) {
                             LazyVGrid(columns: [gridItem,gridItem]) {
                                 ForEach(showFilterMenu ? vm.filteredUsers : vm.allUsers) { otherUser in
-                                    NavigationLink {
-                                        ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false)
+                                    Button{
+                                        self.otherUser = otherUser
                                     } label: {
                                         if let user = vm.currentUser{
                                             OtherUserView(user: user, otherUser: otherUser)
@@ -112,6 +111,9 @@ struct FindNewFriendView: View {
                     }
                     .refreshable {
                         await vm.refresh()
+                    }
+                    .fullScreenCover(item: $otherUser) { otherUser in
+                        ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false)
                     }
                 
             }
