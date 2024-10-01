@@ -207,6 +207,15 @@ struct RecentMessagesView: View {
 
                             
                         }
+                        .onChange(of: tabSelection, { oldValue, newValue in
+                            if newValue == 0{
+                                Task{
+                                    await vm.fetchUserData()
+                                    vm.fetchRecentMessages()
+                                }
+                            }
+                        })
+
                         .onAppear{
                             Task{
                                 await vm.fetchUserData()
