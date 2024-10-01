@@ -8,6 +8,12 @@
 import Foundation
 import FirebaseCore
 
+enum wantToTalk:String{
+    case Green
+    case Orange
+    case Red
+}
+
 struct DBUser:Identifiable, Codable , Hashable {
     var id: String = UUID().uuidString
     let userId : String
@@ -18,18 +24,8 @@ struct DBUser:Identifiable, Codable , Hashable {
     let preferences:[String]
     let age : Double?
     let chatIds:[String]
+    let wantToTalk:Int
     
-    init(id:String,userId:String,name:String,email:String,photoUrl:String,dateCreated:Timestamp,preferences:[String],age:Double,chatIds:[String]){
-        self.id = id
-        self.userId = userId
-        self.name = name
-        self.email = email
-        self.photoUrl = photoUrl
-        self.dateCreated = dateCreated
-        self.preferences = preferences
-        self.age = age
-        self.chatIds = chatIds
-    }
     
     init(recentMessage:MessageModel,currentUser:DBUser){
         self.userId = {
@@ -64,6 +60,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         }()
         self.age = 0
         self.chatIds = []
+        self.wantToTalk = 0
     }
     
     init(data:[String:Any]){
@@ -75,6 +72,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.age = data[CodingKeys.age.rawValue] as? Double ?? 18
         self.name = data[CodingKeys.name.rawValue] as? String ?? ""
         self.chatIds = data[CodingKeys.chatIds.rawValue] as? [String] ?? []
+        self.wantToTalk = data[CodingKeys.wantToTalk.rawValue] as? Int ?? 0
     }
     
     init(authDataResult : AuthDataResultModel,photoUrl:String?,preferences:[String],name:String,age:Double){
@@ -86,36 +84,9 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.name = name
         self.age = age
         self.chatIds = []
+        self.wantToTalk = 0
     }
 
-    
-    init(authDataResult : AuthDataResultModel){
-        self.userId = authDataResult.uid
-        self.email = authDataResult.email
-        self.photoUrl = authDataResult.photoURL?.description
-        self.dateCreated = Timestamp(date: Date())
-        self.preferences = []
-        self.name = nil
-        self.age = nil
-        self.chatIds = []
-    }
-    
-    init(
-        userId:String,
-        email:String? = nil,
-        photoUrl:String? = nil,
-        dateCreated:Timestamp? = nil,
-        preferences:[String]? = nil
-    ){
-        self.userId = userId
-        self.email = email
-        self.photoUrl = photoUrl
-        self.dateCreated = dateCreated
-        self.preferences = []
-        self.name = nil
-        self.age = nil
-        self.chatIds = []
-    }
     
     enum CodingKeys:String, CodingKey {
         case userId = "user_id"
@@ -126,6 +97,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         case age = "age"
         case name = "name"
         case chatIds = "chat_ids"
+        case wantToTalk = "want_to_talk"
     }
     
     init(from decoder: Decoder) throws {
@@ -139,6 +111,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.preferences = try container.decodeIfPresent([String].self, forKey: .preferences) ?? []
          self.age = try container.decodeIfPresent(Double.self, forKey: .age)
         self.chatIds = try container.decodeIfPresent([String].self, forKey: .chatIds) ?? []
+        self.wantToTalk = try container.decode(Int.self, forKey: .wantToTalk)
      }
      
      func encode(to encoder: Encoder) throws {
@@ -151,6 +124,7 @@ struct DBUser:Identifiable, Codable , Hashable {
          try container.encodeIfPresent(self.preferences, forKey: .preferences)
          try container.encodeIfPresent(self.age, forKey: .age)
          try container.encodeIfPresent(self.chatIds, forKey: .chatIds)
+         try container.encodeIfPresent(self.wantToTalk, forKey: .wantToTalk)
      }
     
 }

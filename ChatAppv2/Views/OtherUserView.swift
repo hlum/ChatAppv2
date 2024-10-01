@@ -114,32 +114,3 @@ extension OtherUserView{
         }
     }
 }
-
-#Preview {
-    let currentUser = DBUser(
-        id: "",
-        userId: "",
-        name: "user",
-        email: "user@gmail.com",
-        photoUrl: "https://cdn.pixabay.com/photo/2018/11/13/22/01/avatar-3814081_640.png",
-        dateCreated: Timestamp(date: Date()),
-        preferences: ["1","2","3","4"],
-        age: 17,
-        chatIds: []
-    )
-    
-    OtherUserView(
-        user:currentUser,
-        otherUser:DBUser(
-            id: "",
-            userId: "",
-            name: "土井舜太郎",
-            email: "hlum@gmail.com",
-            photoUrl: "https://cdn.pixabay.com/photo/2018/11/13/22/01/avatar-3814081_640.png",
-            dateCreated: Timestamp(date: Date()),
-            preferences: ["1","2","3","4"],
-            age: 13,
-            chatIds: []
-        )
-    )
-}

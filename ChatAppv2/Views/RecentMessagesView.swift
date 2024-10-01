@@ -365,7 +365,9 @@ extension RecentMessagesView{
                     .padding(.vertical,8)
             }
             .fullScreenCover(item: $recentMessage, content: { recentMessage in
-                ChatLogView(recipient:  DBUser(recentMessage: recentMessage, currentUser: vm.currentUserDB ?? DBUser(userId:"")))
+                if let currentUser = vm.currentUserDB {
+                    ChatLogView(recipient:  DBUser(recentMessage: recentMessage, currentUser: currentUser))
+                }
             })
             .padding(.horizontal)
         }
