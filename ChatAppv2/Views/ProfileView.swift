@@ -333,12 +333,14 @@ struct ProfileView: View {
     
     private var customNavBar:some View{
         HStack{
-            Button{
-                presentationMode.wrappedValue.dismiss()
-            } label: {
-                Image(systemName: "arrow.left")
-                    .font(.title)
-                    .foregroundColor(.blue)
+            if !isUser{
+                Button{
+                    presentationMode.wrappedValue.dismiss()
+                } label: {
+                    Image(systemName: "arrow.left")
+                        .font(.title)
+                        .foregroundColor(.blue)
+                }
             }
 
             Spacer()
