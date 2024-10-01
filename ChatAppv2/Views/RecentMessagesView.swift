@@ -6,8 +6,6 @@ import SDWebImageSwiftUI
 class MainViewMessageViewModel:ObservableObject{
     @Published var showLogOutOption : Bool = false
     @Published var currentUserDB : DBUser? = nil // currentUser
-    @Published var isUserCurrentlyLoggedOut:Bool = true
-    @Published var showFindNewFriendView:Bool = false
     @Published var recentMessages: [MessageModel] = []
     
     
@@ -23,15 +21,17 @@ class MainViewMessageViewModel:ObservableObject{
     
     
     init(){
-        self.isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
-
+        Task{
+              await fetchUserData()
+            fetchRecentMessages()
+        }
     }
+    
     
     func fetchUserData()async {
         await handledLoading(progress: 0.1)
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser()else {
             print("MainViewMessageViewModel:Can't fetch user data")
-            isUserCurrentlyLoggedOut = true
             return
         }
         await handledLoading(progress: 0.15)
@@ -57,7 +57,6 @@ class MainViewMessageViewModel:ObservableObject{
     
     func fetchRecentMessages() {
         guard let userId = try? AuthenticationManager.shared.getAuthenticatedUser().uid else {
-            isUserCurrentlyLoggedOut = true
             return
         }
         messagesListener = ChatManager.shared.recentMessagesCollection
@@ -162,88 +161,82 @@ class MainViewMessageViewModel:ObservableObject{
 }
 
 
-struct MainMessageView: View {
+struct RecentMessagesView: View {
+    @Binding var isUserCurrentlyLoggedOut :Bool
+    @Binding var tabSelection : Int
     @StateObject var vm = MainViewMessageViewModel()
+    @State var recentMessage:MessageModel? = nil
     var body: some View {
-        NavigationStack{
-            
-            ZStack{
-                VStack{
-                    NavigationLink {
-                        ProfileView(passedUserId: vm.currentUserDB?.userId ?? "", isUserCurrentlyLogOut: $vm.isUserCurrentlyLoggedOut, isFromChatView: false)
-                    } label: {
-                        customNavBar
-                            .foregroundStyle(Color(.black))
-                    }
-                    ZStack{
-                        ScrollView{
-                            messagesView
-                                .refreshable {
-                                    await vm.refreshData()
+                ZStack{
+                    VStack{
+                            customNavBar
+                                .foregroundStyle(Color(.black))
+                                .onTapGesture {
+                                    tabSelection = 2
                                 }
-                        }
-                        if vm.recentMessages.isEmpty{
-                            VStack{
-                                Image(systemName: "plus.message.fill")
-                                    .font(.system(size: 100))
-                                    .foregroundStyle(Color.gray)
-                                    .padding()
-                                
-                                Text("誰かに話しかけてみませんか？")
-                                    .font(.headline)
-                                    .foregroundStyle(Color.gray)
+                        ZStack{
+                            ScrollView{
+                                messagesView
                             }
+                            .refreshable {
+                                await vm.refreshData()
+                            }
+
+                            if vm.recentMessages.isEmpty{
+                                VStack{
+                                    Image(systemName: "plus.message.fill")
+                                        .font(.system(size: 100))
+                                        .foregroundStyle(Color.gray)
+                                        .padding()
+                                    
+                                    Text("誰かに話しかけてみませんか？")
+                                        .font(.headline)
+                                        .foregroundStyle(Color.gray)
+                                }
+                                .onTapGesture {
+                                    if let _ = vm.currentUserDB{
+                                        tabSelection = 2
+                                        print("Clicked")
+                                    }
+
+                                
+                            }
+                        }
+                        }
+
+                        
+                    }
+                    .onDisappear {
+                              vm.cancelListeners()
+                          }
+                    .toolbar(.hidden)
+                    
+                    if vm.isLoading {
+                        Color.black.opacity(0.8).ignoresSafeArea()
+                        VStack {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(2)
                             
-                        }
-                    }
-                    .onTapGesture {
-                        if let currentUser = vm.currentUserDB{
-                            vm.showFindNewFriendView = true
+                            ProgressView(value: vm.progress)
+                                .frame(width: 200)
+                                .tint(.white)
+                                .padding()
+                            
+                            Text("\(Int(vm.progress * 100))%")
+                                .foregroundColor(.white)
+                                .font(.headline)
                         }
                     }
 
-                    
-                }
-                .onAppear(perform: {
-                    
-                    Task{
-                        await vm.fetchUserData()
-                        vm.fetchRecentMessages()
-                    }
-                })
-                .onDisappear {
-                          vm.cancelListeners()
-                      }
-                
-                .overlay(newMessageButton,alignment: .bottom)
-                .toolbar(.hidden)
-                
-                if vm.isLoading {
-                    Color.black.opacity(0.8).ignoresSafeArea()
-                    VStack {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(2)
-                        
-                        ProgressView(value: vm.progress)
-                            .frame(width: 200)
-                            .tint(.white)
-                            .padding()
-                        
-                        Text("\(Int(vm.progress * 100))%")
-                            .foregroundColor(.white)
-                            .font(.headline)
-                    }
-                }
-
-            }//End of ZStack
-        }//End of NavigationStack
+                }//End of ZStack
+            
     }
 }
 
 //MARKS: View extensions
 
-extension MainMessageView{
+extension RecentMessagesView{
     
     
     private var customNavBar:some View{
@@ -289,33 +282,9 @@ extension MainMessageView{
             }
             
             Spacer()
-            Button {
-                vm.showLogOutOption.toggle()
-            } label: {
-                Image(systemName: "gear")
-                    .font(.system(size: 24,weight:.bold))
-                    .foregroundStyle(Color(.label))
-            }
         }
-        .padding()
-        .actionSheet(isPresented: $vm.showLogOutOption) {
-            .init(title: Text("Settings"), message: Text("What do you want to do?"), buttons: [
-                .destructive(Text("Sign Out"),action: {
-                    vm.logOut()
-                    vm.isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
-                }),
-                .cancel()
-                
-            ])
-        }
-        .fullScreenCover(isPresented:$vm.isUserCurrentlyLoggedOut,onDismiss: {
-            Task{
-                await vm.fetchUserData()
-                vm.fetchRecentMessages()
-            }
-        })  {
-            OnboardingView(isUserCurrentlyLoggedOut:$vm.isUserCurrentlyLoggedOut)
-        }
+        .padding() 
+        
     }
     
     
@@ -325,8 +294,8 @@ extension MainMessageView{
             
             VStack{
                 
-                NavigationLink {
-                    ChatLogView(recipient:  DBUser(recentMessage: recentMessage, currentUser: vm.currentUserDB ?? DBUser(userId:"")))
+                Button {
+                    self.recentMessage = recentMessage
                 } label: {
                     HStack(spacing: 10){
                         WebImage(url: URL(string: recentMessage.recipientProfileUrl)) { image in
@@ -381,32 +350,12 @@ extension MainMessageView{
                 Divider()
                     .padding(.vertical,8)
             }
+            .fullScreenCover(item: $recentMessage, content: { recentMessage in
+                ChatLogView(recipient:  DBUser(recentMessage: recentMessage, currentUser: vm.currentUserDB ?? DBUser(userId:"")))
+            })
             .padding(.horizontal)
         }
 }
     
-    private var newMessageButton:some View{
-        Button {
-            vm.showFindNewFriendView = true
-        } label: {
-            HStack{
-                Spacer()
-                Text("友達を探す")
-                    .font(.system(size: 16,weight: .bold))
-                Spacer()
-            }
-            .foregroundStyle(Color(.white))
-            .padding(.vertical)
-            .background(.blue)
-            .cornerRadius(32)
-            .padding()
-            .shadow(radius: 15)
-        }
-        .fullScreenCover(isPresented: $vm.showFindNewFriendView) {
-            if let currentUser = vm.currentUserDB{
-                FindNewFriendView(currentUser: currentUser)
-            }
-        }
-    }
 }
 

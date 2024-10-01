@@ -18,7 +18,10 @@ struct ChatAppv2App: App {
 
     var body: some Scene {
         WindowGroup {
-            MainMessageView()
+            NavigationStack{
+                MainTabView()
+                    .toolbar(.hidden)
+            }
         }
     }
 
