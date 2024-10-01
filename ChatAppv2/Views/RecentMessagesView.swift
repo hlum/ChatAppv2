@@ -22,7 +22,7 @@ class MainViewMessageViewModel:ObservableObject{
     
     init(){
         Task{
-              await fetchUserData()
+            await fetchUserData()
             fetchRecentMessages()
         }
     }
@@ -167,70 +167,78 @@ struct RecentMessagesView: View {
     @StateObject var vm = MainViewMessageViewModel()
     @State var recentMessage:MessageModel? = nil
     var body: some View {
-                ZStack{
-                    VStack{
-                            customNavBar
-                                .foregroundStyle(Color(.black))
-                                .onTapGesture {
-                                    tabSelection = 2
-                                }
-                        ZStack{
-                            ScrollView{
-                                messagesView
-                            }
-                            .refreshable {
-                                await vm.refreshData()
-                            }
-
-                            if vm.recentMessages.isEmpty{
-                                VStack{
-                                    Image(systemName: "plus.message.fill")
-                                        .font(.system(size: 100))
-                                        .foregroundStyle(Color.gray)
-                                        .padding()
-                                    
-                                    Text("誰かに話しかけてみませんか？")
-                                        .font(.headline)
-                                        .foregroundStyle(Color.gray)
-                                }
-                                .onTapGesture {
-                                    if let _ = vm.currentUserDB{
+        NavigationStack{
+                    ZStack{
+                        VStack{
+                                customNavBar
+                                    .foregroundStyle(Color(.black))
+                                    .onTapGesture {
                                         tabSelection = 2
-                                        print("Clicked")
                                     }
+                            ZStack{
+                                ScrollView{
+                                    messagesView
+                                }
+                                .refreshable {
+                                    await vm.refreshData()
+                                }
 
-                                
+                                if vm.recentMessages.isEmpty{
+                                    VStack{
+                                        Image(systemName: "plus.message.fill")
+                                            .font(.system(size: 100))
+                                            .foregroundStyle(Color.gray)
+                                            .padding()
+                                        
+                                        Text("誰かに話しかけてみませんか？")
+                                            .font(.headline)
+                                            .foregroundStyle(Color.gray)
+                                    }
+                                    .onTapGesture {
+                                        if let _ = vm.currentUserDB{
+                                            tabSelection = 2
+                                            print("Clicked")
+                                        }
+
+                                    
+                                }
+                            }
+                            }
+
+                            
+                        }
+                        .onAppear{
+                            Task{
+                                await vm.fetchUserData()
+                                vm.fetchRecentMessages()
                             }
                         }
-                        }
-
+                        .onDisappear {
+                                  vm.cancelListeners()
+                              }
+                        .toolbar(.hidden)
                         
-                    }
-                    .onDisappear {
-                              vm.cancelListeners()
-                          }
-                    .toolbar(.hidden)
-                    
-                    if vm.isLoading {
-                        Color.black.opacity(0.8).ignoresSafeArea()
-                        VStack {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .scaleEffect(2)
-                            
-                            ProgressView(value: vm.progress)
-                                .frame(width: 200)
-                                .tint(.white)
-                                .padding()
-                            
-                            Text("\(Int(vm.progress * 100))%")
-                                .foregroundColor(.white)
-                                .font(.headline)
+                        if vm.isLoading {
+                            Color.black.opacity(0.8).ignoresSafeArea()
+                            VStack {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(2)
+                                
+                                ProgressView(value: vm.progress)
+                                    .frame(width: 200)
+                                    .tint(.white)
+                                    .padding()
+                                
+                                Text("\(Int(vm.progress * 100))%")
+                                    .foregroundColor(.white)
+                                    .font(.headline)
+                            }
                         }
-                    }
 
-                }//End of ZStack
-            
+                    }//End of ZStack
+                }
+
     }
 }
 

@@ -83,7 +83,6 @@ struct FindNewFriendView: View {
     @Binding var tabSelection:Int
     
     var body: some View {
-        NavigationStack{
             VStack(spacing:0){
                 customHeader
                     if showFilterMenu{
@@ -115,9 +114,7 @@ struct FindNewFriendView: View {
                     }
                     .fullScreenCover(item: $otherUser) { otherUser in
                         ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false, isUser: false)
-                    }
-                
-            }
+                        }
         }
     }
 }
