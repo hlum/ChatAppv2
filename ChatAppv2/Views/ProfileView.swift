@@ -266,9 +266,6 @@ struct ProfileView: View {
                                         .foregroundColor(.white)
                                         .cornerRadius(10)
                                         .shadow(radius: 20)
-                                        .fullScreenCover(item: $user) { user in
-                                            ChatLogView(recipient:user)
-                                        }
                                 }
 
                             }
@@ -293,6 +290,10 @@ struct ProfileView: View {
                 .task{
                     try? await vm.loadCurrentUser()
                 }
+                .fullScreenCover(item: $user) { user in
+                    ChatLogView(recipient:user)
+                }
+
                 
             }
             .safeAreaInset(edge: .top, content: {
