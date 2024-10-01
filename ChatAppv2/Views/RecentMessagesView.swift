@@ -177,10 +177,11 @@ struct RecentMessagesView: View {
                         ZStack{
                             ScrollView{
                                 messagesView
-                                    .refreshable {
-                                        await vm.refreshData()
-                                    }
                             }
+                            .refreshable {
+                                await vm.refreshData()
+                            }
+
                             if vm.recentMessages.isEmpty{
                                 VStack{
                                     Image(systemName: "plus.message.fill")
