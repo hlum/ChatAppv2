@@ -182,6 +182,7 @@ class MainViewMessageViewModel:ObservableObject{
 struct RecentMessagesView: View {
     @Binding var tabSelection : Int
     @StateObject var vm = MainViewMessageViewModel()
+    @State var recentMessage:MessageModel? = nil
     var body: some View {
         NavigationStack{
             
@@ -342,8 +343,8 @@ extension RecentMessagesView{
             
             VStack{
                 
-                NavigationLink {
-                    ChatLogView(recipient:  DBUser(recentMessage: recentMessage, currentUser: vm.currentUserDB ?? DBUser(userId:"")))
+                Button {
+                    self.recentMessage = recentMessage
                 } label: {
                     HStack(spacing: 10){
                         WebImage(url: URL(string: recentMessage.recipientProfileUrl)) { image in
@@ -398,6 +399,9 @@ extension RecentMessagesView{
                 Divider()
                     .padding(.vertical,8)
             }
+            .fullScreenCover(item: $recentMessage, content: { recentMessage in
+                ChatLogView(recipient:  DBUser(recentMessage: recentMessage, currentUser: vm.currentUserDB ?? DBUser(userId:"")))
+            })
             .padding(.horizontal)
         }
 }
