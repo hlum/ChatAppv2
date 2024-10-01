@@ -80,6 +80,7 @@ struct FindNewFriendView: View {
     @ObservedObject var vm = FindNewFriendsView()
     @State var gridItem:GridItem = GridItem(.fixed(150))
     @State var otherUser:DBUser? = nil
+    @Binding var tabSelection:Int
     
     var body: some View {
         NavigationStack{
@@ -113,7 +114,7 @@ struct FindNewFriendView: View {
                         await vm.refresh()
                     }
                     .fullScreenCover(item: $otherUser) { otherUser in
-                        ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false)
+                        ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false, isUser: false)
                     }
                 
             }

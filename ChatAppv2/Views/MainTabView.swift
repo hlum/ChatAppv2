@@ -9,15 +9,34 @@ import SwiftUI
 import SDWebImageSwiftUI
 
 class MainTabViewModel:ObservableObject{
+    @Published var isUserCurrentlyLoggedOut:Bool = false
     @Published var user:DBUser? = nil
-    
+
     init(){
         Task{
-            await fetchCurrentUser()
+            let isUserCurrentlyLoggedOut = await !checkTheUserIsInDataBase()
+            DispatchQueue.main.async {
+                self.isUserCurrentlyLoggedOut = isUserCurrentlyLoggedOut
+            }
+
+           await fetchCurrentUser()
         }
     }
     
-    private func fetchCurrentUser()async{
+    func checkTheUserIsInDataBase() async -> Bool {
+           guard let user = try? AuthenticationManager.shared.getAuthenticatedUser()else{
+               print("Can't get current user")
+               return false
+           }
+           do {
+               return try await UserManager.shared.checkIfUserExistInDatabase(userId: user.uid)
+           } catch {
+               return false
+           }
+       }
+
+    
+    func fetchCurrentUser()async{
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser() else {
             print("Error: No authenticated user")
             return
@@ -64,41 +83,52 @@ struct MainTabView: View {
     
     @State var tabSelection: Int = 0
     var body: some View {
-        ZStack(alignment:.bottom){
-            TabView (selection:$tabSelection){
-                RecentMessagesView(tabSelection: $tabSelection)
-                    .tag(0)
-                if let currentUser = vm.user{
-                    FindNewFriendView()
-                        .tag(1)
-                    
-                    ProfileView(passedUserId: currentUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false)
-                        .tag(2)
-                }
-            }
-            .tabViewStyle(PageTabViewStyle())
-            ZStack{
-                HStack{
-                    ForEach((TabItems.allCases), id: \.self){ item in
-                        Button{
-                            withAnimation(.bouncy) {
-                                tabSelection = item.rawValue
-                            }
-                        } label: {
-                            customTabBar(item: item, isActive: tabSelection == item.rawValue)
-                        }
+            ZStack(alignment:.bottom){
+                TabView (selection:$tabSelection){
+                    RecentMessagesView(isUserCurrentlyLoggedOut: $vm.isUserCurrentlyLoggedOut, tabSelection: $tabSelection)
+                        .tag(0)
+                    if let currentUser = vm.user{
+                        FindNewFriendView( tabSelection: $tabSelection)
+                            .tag(1)
+                        
+                        ProfileView(passedUserId: currentUser.userId, isUserCurrentlyLogOut: $vm.isUserCurrentlyLoggedOut, isFromChatView: false, isUser: true)
+                            .tag(2)
                     }
                 }
-                .padding(6)
+                .task {
+                    await vm.fetchCurrentUser()
+                }
+                .tabViewStyle(PageTabViewStyle())
+                ZStack{
+                    HStack{
+                        ForEach((TabItems.allCases), id: \.self){ item in
+                            Button{
+                                withAnimation(.bouncy) {
+                                    tabSelection = item.rawValue
+                                }
+                            } label: {
+                                customTabBar(item: item, isActive: tabSelection == item.rawValue)
+                            }
+                        }
+                    }
+                    .padding(6)
+                }
+                .frame(height: 55)
+                .background(.thinMaterial)
+                .cornerRadius(35)
+                .padding(.horizontal, 70)
+                .ignoresSafeArea()
+                .padding(.bottom,40)
             }
-            .frame(height: 55)
-            .background(.thinMaterial)
-            .cornerRadius(35)
-            .padding(.horizontal, 70)
-            .ignoresSafeArea()
-            .padding(.bottom,40)
-        }
-        .ignoresSafeArea(edges:.bottom)
+            .fullScreenCover(isPresented: $vm.isUserCurrentlyLoggedOut, onDismiss: {
+                Task{
+                    await vm.fetchCurrentUser()
+                }
+            }, content: {
+                OnboardingView(isUserCurrentlyLoggedOut: $vm.isUserCurrentlyLoggedOut)
+            })
+            .ignoresSafeArea(edges:.bottom)
+        
         
     }
 }
@@ -125,7 +155,6 @@ extension MainTabView {
         .frame(height: 40)
         .background(isActive ? .orange : .clear)
         .cornerRadius(30)
-        
     }
 }
 

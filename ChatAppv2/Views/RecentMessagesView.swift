@@ -6,8 +6,6 @@ import SDWebImageSwiftUI
 class MainViewMessageViewModel:ObservableObject{
     @Published var showLogOutOption : Bool = false
     @Published var currentUserDB : DBUser? = nil // currentUser
-    @Published var isUserCurrentlyLoggedOut:Bool = false
-    @Published var showFindNewFriendView:Bool = false
     @Published var recentMessages: [MessageModel] = []
     
     
@@ -24,31 +22,16 @@ class MainViewMessageViewModel:ObservableObject{
     
     init(){
         Task{
-            let isUserCurrentlyLoggedOut = await !checkTheUserIsInDataBase()
-            DispatchQueue.main.async {
-                self.isUserCurrentlyLoggedOut = isUserCurrentlyLoggedOut
-            }
+              await fetchUserData()
+            fetchRecentMessages()
         }
     }
-    
-    func checkTheUserIsInDataBase() async -> Bool {
-           guard let user = try? AuthenticationManager.shared.getAuthenticatedUser()else{
-               print("Can't get current user")
-               return false
-           }
-           do {
-               return try await UserManager.shared.checkIfUserExistInDatabase(userId: user.uid)
-           } catch {
-               return false
-           }
-       }
     
     
     func fetchUserData()async {
         await handledLoading(progress: 0.1)
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser()else {
             print("MainViewMessageViewModel:Can't fetch user data")
-            isUserCurrentlyLoggedOut = true
             return
         }
         await handledLoading(progress: 0.15)
@@ -74,7 +57,6 @@ class MainViewMessageViewModel:ObservableObject{
     
     func fetchRecentMessages() {
         guard let userId = try? AuthenticationManager.shared.getAuthenticatedUser().uid else {
-            isUserCurrentlyLoggedOut = true
             return
         }
         messagesListener = ChatManager.shared.recentMessagesCollection
@@ -180,82 +162,74 @@ class MainViewMessageViewModel:ObservableObject{
 
 
 struct RecentMessagesView: View {
+    @Binding var isUserCurrentlyLoggedOut :Bool
     @Binding var tabSelection : Int
     @StateObject var vm = MainViewMessageViewModel()
     @State var recentMessage:MessageModel? = nil
     var body: some View {
-        NavigationStack{
-            
-            ZStack{
-                VStack{
-                        customNavBar
-                            .foregroundStyle(Color(.black))
-                            .onTapGesture {
-                                tabSelection = 2
-                            }
-                    ZStack{
-                        ScrollView{
-                            messagesView
-                                .refreshable {
-                                    await vm.refreshData()
-                                }
-                        }
-                        if vm.recentMessages.isEmpty{
-                            VStack{
-                                Image(systemName: "plus.message.fill")
-                                    .font(.system(size: 100))
-                                    .foregroundStyle(Color.gray)
-                                    .padding()
-                                
-                                Text("誰かに話しかけてみませんか？")
-                                    .font(.headline)
-                                    .foregroundStyle(Color.gray)
-                            }
-                            .onTapGesture {
-                                if let _ = vm.currentUserDB{
+                ZStack{
+                    VStack{
+                            customNavBar
+                                .foregroundStyle(Color(.black))
+                                .onTapGesture {
                                     tabSelection = 2
-                                    print("Clicked")
                                 }
+                        ZStack{
+                            ScrollView{
+                                messagesView
+                                    .refreshable {
+                                        await vm.refreshData()
+                                    }
+                            }
+                            if vm.recentMessages.isEmpty{
+                                VStack{
+                                    Image(systemName: "plus.message.fill")
+                                        .font(.system(size: 100))
+                                        .foregroundStyle(Color.gray)
+                                        .padding()
+                                    
+                                    Text("誰かに話しかけてみませんか？")
+                                        .font(.headline)
+                                        .foregroundStyle(Color.gray)
+                                }
+                                .onTapGesture {
+                                    if let _ = vm.currentUserDB{
+                                        tabSelection = 2
+                                        print("Clicked")
+                                    }
 
+                                
+                            }
+                        }
+                        }
+
+                        
+                    }
+                    .onDisappear {
+                              vm.cancelListeners()
+                          }
+                    .toolbar(.hidden)
+                    
+                    if vm.isLoading {
+                        Color.black.opacity(0.8).ignoresSafeArea()
+                        VStack {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(2)
                             
+                            ProgressView(value: vm.progress)
+                                .frame(width: 200)
+                                .tint(.white)
+                                .padding()
+                            
+                            Text("\(Int(vm.progress * 100))%")
+                                .foregroundColor(.white)
+                                .font(.headline)
                         }
                     }
-                    }
 
-                    
-                }
-                .onAppear(perform: {
-                    
-                    Task{
-                        await vm.fetchUserData()
-                        vm.fetchRecentMessages()
-                    }
-                })
-                .onDisappear {
-                          vm.cancelListeners()
-                      }
-                .toolbar(.hidden)
-                
-                if vm.isLoading {
-                    Color.black.opacity(0.8).ignoresSafeArea()
-                    VStack {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(2)
-                        
-                        ProgressView(value: vm.progress)
-                            .frame(width: 200)
-                            .tint(.white)
-                            .padding()
-                        
-                        Text("\(Int(vm.progress * 100))%")
-                            .foregroundColor(.white)
-                            .font(.headline)
-                    }
-                }
-
-            }//End of ZStack
-        }//End of NavigationStack
+                }//End of ZStack
+            
     }
 }
 
@@ -307,33 +281,9 @@ extension RecentMessagesView{
             }
             
             Spacer()
-            Button {
-                vm.showLogOutOption.toggle()
-            } label: {
-                Image(systemName: "gear")
-                    .font(.system(size: 24,weight:.bold))
-                    .foregroundStyle(Color(.label))
-            }
         }
-        .padding()
-        .actionSheet(isPresented: $vm.showLogOutOption) {
-            .init(title: Text("Settings"), message: Text("What do you want to do?"), buttons: [
-                .destructive(Text("Sign Out"),action: {
-                    vm.logOut()
-                    vm.isUserCurrentlyLoggedOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
-                }),
-                .cancel()
-                
-            ])
-        }
-        .fullScreenCover(isPresented:$vm.isUserCurrentlyLoggedOut,onDismiss: {
-            Task{
-                await vm.fetchUserData()
-                vm.fetchRecentMessages()
-            }
-        })  {
-            OnboardingView(isUserCurrentlyLoggedOut:$vm.isUserCurrentlyLoggedOut)
-        }
+        .padding() 
+        
     }
     
     
