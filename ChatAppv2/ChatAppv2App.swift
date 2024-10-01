@@ -13,7 +13,8 @@ struct ChatAppv2App: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     var body: some Scene {
         WindowGroup {
-            MainMessageView()
+                MainTabView()
+                    .toolbar(.hidden)
         }
     }
 

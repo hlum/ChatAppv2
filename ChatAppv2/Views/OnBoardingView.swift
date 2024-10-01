@@ -270,7 +270,7 @@ extension OnboardingView {
     private var welcomeSection: some View {
         VStack(spacing: 40) {
             Spacer()
-            Text("チャットを始めましょう")
+            Text("友達を探しましょう。。")
                 .font(.largeTitle)
                 .fontWeight(.semibold)
                 .foregroundColor(Color.customWhite)
@@ -281,7 +281,7 @@ extension OnboardingView {
                         .foregroundColor(.white),
                     alignment: .bottom
                 )
-            Text("これはオンラインマッチングのための人気No.1アプリです...")
+            Text("校内の同じ趣味を持っている人と話し合いましょう。。")
                 .fontWeight(.medium)
                 .foregroundColor(Color.customWhite)
             Spacer()
