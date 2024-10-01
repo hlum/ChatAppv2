@@ -249,6 +249,7 @@ struct ProfileView: View {
                                         .foregroundColor(.white)
                                         .cornerRadius(10)
                                         .shadow(radius: 20)
+
                                 }
                             }
                             else{
@@ -279,6 +280,7 @@ struct ProfileView: View {
                 .padding()
                 .navigationTitle(vm.isUser ? "Your Profile" : "\(vm.user?.name ?? "User")'s Profile")
                 .navigationBarTitleDisplayMode(.inline)
+                .padding(.bottom,50) //for the tab bar
                 .alert(isPresented: $vm.showAlert) {
                     Alert(title: Text(vm.alertTitle))
                 }
@@ -471,7 +473,6 @@ struct ProfileView: View {
                 .background(.red)
                 .foregroundColor(.white)
                 .cornerRadius(10)
-                .padding()
                 .shadow(radius: 20)
         }
     }

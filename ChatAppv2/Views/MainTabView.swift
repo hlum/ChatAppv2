@@ -76,6 +76,7 @@ struct MainTabView: View {
                         .tag(2)
                 }
             }
+            .tabViewStyle(PageTabViewStyle())
             ZStack{
                 HStack{
                     ForEach((TabItems.allCases), id: \.self){ item in
@@ -91,10 +92,14 @@ struct MainTabView: View {
                 .padding(6)
             }
             .frame(height: 55)
-            .background(.black)
+            .background(.thinMaterial)
             .cornerRadius(35)
             .padding(.horizontal, 70)
+            .ignoresSafeArea()
+            .padding(.bottom,40)
         }
+        .ignoresSafeArea(edges:.bottom)
+        
     }
 }
 
@@ -115,14 +120,6 @@ extension MainTabView {
                     .font(.title3)
             }
                 
-                
-//            
-//            if isActive{
-//                Text(item.Title)
-//                    .font(.headline)
-//                    .foregroundColor(.white)
-//                    
-//            }
         }
         .frame(width: isActive ? 100 : 60)
         .frame(height: 40)
