@@ -10,7 +10,7 @@ import FirebaseCore
 
 
 //let wantToTalk:[String] = ["😁","😃","😐","🙁","☹️"]
-enum WantToTalk:String,CaseIterable{
+enum WantToTalk:String,CaseIterable,Codable{
     case One = "😁"
     case Two = "😃"
     case Three = "😐"
@@ -28,7 +28,7 @@ struct DBUser:Identifiable, Codable , Hashable {
     let preferences:[String]
     let age : Double?
     let chatIds:[String]
-    let wantToTalk:Int
+    var wantToTalk:WantToTalk = .Three
     
     
     init(recentMessage:MessageModel,currentUser:DBUser){
@@ -64,7 +64,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         }()
         self.age = 0
         self.chatIds = []
-        self.wantToTalk = 0
+        self.wantToTalk = .Three
     }
     
     init(data:[String:Any]){
@@ -76,10 +76,10 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.age = data[CodingKeys.age.rawValue] as? Double ?? 18
         self.name = data[CodingKeys.name.rawValue] as? String ?? ""
         self.chatIds = data[CodingKeys.chatIds.rawValue] as? [String] ?? []
-        self.wantToTalk = data[CodingKeys.wantToTalk.rawValue] as? Int ?? 0
+        self.wantToTalk = data[CodingKeys.wantToTalk.rawValue] as? WantToTalk ?? .Three
     }
     
-    init(authDataResult : AuthDataResultModel,photoUrl:String?,preferences:[String],name:String,age:Double){
+    init(authDataResult : AuthDataResultModel,photoUrl:String?,preferences:[String],name:String,age:Double,wantToTalk:WantToTalk){
         self.userId = authDataResult.uid
         self.email = authDataResult.email
         self.photoUrl = photoUrl?.description
@@ -88,7 +88,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.name = name
         self.age = age
         self.chatIds = []
-        self.wantToTalk = 0
+        self.wantToTalk = wantToTalk
     }
 
     
@@ -115,7 +115,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.preferences = try container.decodeIfPresent([String].self, forKey: .preferences) ?? []
          self.age = try container.decodeIfPresent(Double.self, forKey: .age)
         self.chatIds = try container.decodeIfPresent([String].self, forKey: .chatIds) ?? []
-        self.wantToTalk = try container.decode(Int.self, forKey: .wantToTalk)
+        self.wantToTalk = try container.decode(WantToTalk.self, forKey: .wantToTalk)
      }
      
      func encode(to encoder: Encoder) throws {

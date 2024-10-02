@@ -124,7 +124,8 @@ extension OnboardingViewModel{
                 photoUrl: photoURL,
                 preferences: preferences,
                 name: name,
-                age: age
+                age: age,
+                wantToTalk: wantToTalk
             )
             
             // Save user data
@@ -163,7 +164,7 @@ extension OnboardingViewModel {
 
 struct OnboardingView: View {
     @State private var dragOffset: CGSize = .zero
-    @State var onboardingState: Int = 4
+    @State var onboardingState: Int = 0
     let transition: AnyTransition = .asymmetric(
         insertion: .move(edge: .trailing),
         removal: .move(edge: .leading))
