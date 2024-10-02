@@ -8,10 +8,14 @@
 import Foundation
 import FirebaseCore
 
-enum wantToTalk:String{
-    case Green
-    case Orange
-    case Red
+
+//let wantToTalk:[String] = ["😁","😃","😐","🙁","☹️"]
+enum WantToTalk:String,CaseIterable{
+    case One = "😁"
+    case Two = "😃"
+    case Three = "😐"
+    case Four = "🙁"
+    case Five = "☹️"
 }
 
 struct DBUser:Identifiable, Codable , Hashable {

@@ -13,7 +13,7 @@ struct ChatAppv2App: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     var body: some Scene {
         WindowGroup {
-                MainTabView()
+            OnboardingView(isUserCurrentlyLoggedOut: .constant(true))
                     .toolbar(.hidden)
         }
     }
