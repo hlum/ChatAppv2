@@ -169,9 +169,6 @@ struct RecentMessagesView: View {
                         VStack{
                                 customNavBar
                                     .foregroundStyle(Color(.black))
-                                    .onTapGesture {
-                                        tabSelection = 2
-                                    }
                             ZStack{
                                 ScrollView{
                                     messagesView
@@ -270,6 +267,8 @@ extension RecentMessagesView{
                                 .stroke(Color(.label),lineWidth: 1)
                             )
                             .shadow(radius: 5)
+                      
+
                     } placeholder: {
                         Image(.profilePic)
                             .resizable()
@@ -277,25 +276,22 @@ extension RecentMessagesView{
                             .frame(width: 60,height: 60)
                             .padding()
                     }
-            }
+                    .onTapGesture {
+                        withAnimation(.bouncy){
+                            tabSelection = 2
+                        }
+                    }
 
-
-            VStack(alignment:.leading,spacing: 4){
-                let name = vm.currentUserDB?.name ?? "........"
-                Text(name)
-                    .font(.system(size: 24,weight:.bold))
                 
-                HStack{
-                    Circle()
-                        .foregroundStyle(Color(.green))
-                        .frame(width: 14)
-                    Text("online")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color(.lightGray))
-                }
+                Text("\(currentUser.name ?? "....")  \(currentUser.wantToTalk.rawValue)")
+                    .font(.system(size: 24,weight:.bold))
+
             }
             
+            
+            
             Spacer()
+            
         }
         .padding() 
         
