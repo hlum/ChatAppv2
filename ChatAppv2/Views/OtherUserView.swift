@@ -46,6 +46,12 @@ struct OtherUserView: View {
         ZStack{
             HStack(spacing:0){
                 profilePic
+                    .overlay(alignment: .topLeading, content: {
+                        Text("\( vm.otherUser.wantToTalk.rawValue)")
+                            .font(.system(size: 20))
+                            .offset(x:-7,y:-7)
+                    })
+                    
                     .padding(.horizontal)
                 nameAndAge
                 Spacer()
