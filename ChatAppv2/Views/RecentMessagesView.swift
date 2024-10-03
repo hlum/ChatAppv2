@@ -466,7 +466,12 @@ extension RecentMessagesView{
                 Divider()
                     .padding(.vertical,8)
             }
-            .fullScreenCover(item: $recentMessage, content: { recentMessage in
+            .fullScreenCover(item: $recentMessage, onDismiss: {
+                Task{
+                    await vm.fetchUserData()
+                    vm.fetchRecentMessages()
+                }
+            }, content: { recentMessage in
                 if let currentUser = vm.currentUserDB {
                     ChatLogView(recipient:  DBUser(recentMessage: recentMessage, currentUser: currentUser))
                 }
