@@ -8,8 +8,6 @@
 import Foundation
 import FirebaseCore
 
-
-//let wantToTalk:[String] = ["😁","😃","😐","🙁","☹️"]
 enum WantToTalk:String,CaseIterable,Codable{
     case One = "😁"
     case Two = "😃"
@@ -76,7 +74,13 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.age = data[CodingKeys.age.rawValue] as? Double ?? 18
         self.name = data[CodingKeys.name.rawValue] as? String ?? ""
         self.chatIds = data[CodingKeys.chatIds.rawValue] as? [String] ?? []
-        self.wantToTalk = data[CodingKeys.wantToTalk.rawValue] as? WantToTalk ?? .Three
+        // Decode wantToTalk safely using raw value
+        if let wantToTalkRawValue = data[CodingKeys.wantToTalk.rawValue] as? String,
+           let wantToTalkValue = WantToTalk(rawValue: wantToTalkRawValue) {
+            self.wantToTalk = wantToTalkValue
+        } else {
+            self.wantToTalk = .Three // Default to "😐"
+        }
     }
     
     init(authDataResult : AuthDataResultModel,photoUrl:String?,preferences:[String],name:String,age:Double,wantToTalk:WantToTalk){

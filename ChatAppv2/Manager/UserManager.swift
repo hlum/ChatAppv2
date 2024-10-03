@@ -140,6 +140,11 @@ final class UserManager{
         try await userDocuments(userId: userId).updateData(newData)
     }
     
+    
+    func updateUserWantedToTalk(userId:String,newWantedToTalk:WantToTalk) async throws{
+        let data:[String:Any] = [DBUser.CodingKeys.wantToTalk.rawValue:newWantedToTalk.rawValue]
+        try await userDocuments(userId: userId).updateData(data)
+    }
 }
 
 

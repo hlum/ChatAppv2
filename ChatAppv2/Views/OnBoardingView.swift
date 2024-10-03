@@ -440,7 +440,6 @@ extension OnboardingView {
                     
                 }
             }
-            
             .padding(.horizontal)
             .background(.white)
             .cornerRadius(80)

@@ -7,10 +7,14 @@ class MainViewMessageViewModel:ObservableObject{
     @Published var showLogOutOption : Bool = false
     @Published var currentUserDB : DBUser? = nil // currentUser
     @Published var recentMessages: [MessageModel] = []
+    @Published var wantToTalk:WantToTalk = .Three
     
     
     @Published var isLoading:Bool = false
     @Published var progress:Float = 0.0 //from 0 -> 1
+    
+    @Published var showAlert:Bool = false
+    @Published var alertMessage:String = ""
     
     
 
@@ -27,7 +31,21 @@ class MainViewMessageViewModel:ObservableObject{
         }
     }
     
+    func updateUserWantToTalkStatus() async{
+        guard
+            let user = try? AuthenticationManager.shared.getAuthenticatedUser()
+        else {
+            print("Can't get userId")
+            return
+        }
+        try? await UserManager.shared.updateUserWantedToTalk(userId: user.uid, newWantedToTalk: wantToTalk)
+    }
     
+    
+    func showMessage(alertMessage:String){
+        showAlert = true
+        self.alertMessage = alertMessage
+    }
     func fetchUserData()async {
         await handledLoading(progress: 0.1)
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser()else {
@@ -159,88 +177,116 @@ class MainViewMessageViewModel:ObservableObject{
 
 
 struct RecentMessagesView: View {
+    @Namespace var nameSpace
+    @State var showWantToTalkMenu :Bool = false
     @Binding var isUserCurrentlyLoggedOut :Bool
     @Binding var tabSelection : Int
     @StateObject var vm = MainViewMessageViewModel()
     @State var recentMessage:MessageModel? = nil
     var body: some View {
         NavigationStack{
+            ZStack{
+                VStack{
+                    customNavBar
+                        .foregroundStyle(Color(.black))
                     ZStack{
-                        VStack{
-                                customNavBar
-                                    .foregroundStyle(Color(.black))
-                            ZStack{
-                                ScrollView{
-                                    messagesView
-                                }
-                                .refreshable {
-                                    await vm.refreshData()
-                                }
-
-                                if vm.recentMessages.isEmpty{
-                                    VStack{
-                                        Image(systemName: "plus.message.fill")
-                                            .font(.system(size: 100))
-                                            .foregroundStyle(Color.gray)
-                                            .padding()
-                                        
-                                        Text("誰かに話しかけてみませんか？")
-                                            .font(.headline)
-                                            .foregroundStyle(Color.gray)
-                                    }
-                                    .onTapGesture {
-                                        if let _ = vm.currentUserDB{
-                                            tabSelection = 2
-                                            print("Clicked")
-                                        }
-
-                                    
-                                }
-                            }
-                            }
-
-                            
+                        ScrollView{
+                            messagesView
                         }
-                        .onChange(of: tabSelection, { oldValue, newValue in
-                            if newValue == 0{
-                                Task{
-                                    await vm.fetchUserData()
-                                    vm.fetchRecentMessages()
-                                }
-                            }
-                        })
-
-                        .onAppear{
-                            Task{
-                                await vm.fetchUserData()
-                                vm.fetchRecentMessages()
-                            }
+                        .refreshable {
+                            await vm.refreshData()
                         }
-                        .onDisappear {
-                                  vm.cancelListeners()
-                              }
-                        .toolbar(.hidden)
                         
-                        if vm.isLoading {
-                            Color.black.opacity(0.8).ignoresSafeArea()
-                            VStack {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .scaleEffect(2)
-                                
-                                ProgressView(value: vm.progress)
-                                    .frame(width: 200)
-                                    .tint(.white)
+                        if vm.recentMessages.isEmpty{
+                            VStack{
+                                Image(systemName: "plus.message.fill")
+                                    .font(.system(size: 100))
+                                    .foregroundStyle(Color.gray)
                                     .padding()
                                 
-                                Text("\(Int(vm.progress * 100))%")
-                                    .foregroundColor(.white)
+                                Text("誰かに話しかけてみませんか？")
                                     .font(.headline)
+                                    .foregroundStyle(Color.gray)
+                            }
+                            .onTapGesture {
+                                if let _ = vm.currentUserDB{
+                                    tabSelection = 2
+                                    print("Clicked")
+                                }
+                                
+                                
                             }
                         }
-
-                    }//End of ZStack
+                    }
+                    
+                    
                 }
+                .onChange(of: tabSelection, { oldValue, newValue in
+                    if newValue == 0{
+                        Task{
+                            await vm.fetchUserData()
+                            vm.fetchRecentMessages()
+                        }
+                    }
+                })
+                
+                .onAppear{
+                    Task{
+                        await vm.fetchUserData()
+                        vm.fetchRecentMessages()
+                    }
+                }
+                .onDisappear {
+                    vm.cancelListeners()
+                }
+                .toolbar(.hidden)
+                
+                if vm.isLoading {
+                    Color.black.opacity(0.8).ignoresSafeArea()
+                    VStack {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(2)
+                        
+                        ProgressView(value: vm.progress)
+                            .frame(width: 200)
+                            .tint(.white)
+                            .padding()
+                        
+                        Text("\(Int(vm.progress * 100))%")
+                            .foregroundColor(.white)
+                            .font(.headline)
+                    }
+                }
+                
+            }//End of ZStack
+            .alert(vm.alertMessage, isPresented: $vm.showAlert) {
+                // Custom Confirm Button
+                Button(role: .destructive) {
+                    Task{
+                        await vm.updateUserWantToTalkStatus()
+                        await vm.fetchUserData()
+                        withAnimation(.bouncy) {
+                            showWantToTalkMenu = false
+                        }
+                        
+                    }
+                } label: {
+                    Text("確認")
+                        .foregroundColor(.white)  // Customize color
+                        .padding()                // Add padding if needed
+                        .background(Color.red)     // Customize background color
+                        .cornerRadius(8)           // Customize corner radius
+                }
+                
+                // Cancel Button
+                Button("キャンセル", role: .cancel) {
+                    // Handle cancel action
+                }
+            } message: {
+                Text("今の気分を　\(vm.wantToTalk.rawValue)　に変更しますか？。")
+            }
+        }
 
     }
 }
@@ -251,53 +297,113 @@ extension RecentMessagesView{
     
     
     private var customNavBar:some View{
-        HStack{
-            
-            if let currentUser = vm.currentUserDB ,
-               let urlString = currentUser.photoUrl
-            {
-                WebImage(url: URL(string: urlString)) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width:50,height: 50)
-                            .clipped()
-                            .cornerRadius(50)
-                            .overlay(RoundedRectangle(cornerRadius: 44)
-                                .stroke(Color(.label),lineWidth: 1)
-                            )
-                            .shadow(radius: 5)
-                      
-
-                    } placeholder: {
-                        Image(.profilePic)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 60,height: 60)
-                            .padding()
-                    }
-                    .onTapGesture {
-                        withAnimation(.bouncy){
-                            tabSelection = 2
-                        }
-                    }
-
+        VStack{
+            HStack{
                 
-                Text("\(currentUser.name ?? "....")  \(currentUser.wantToTalk.rawValue)")
-                    .font(.system(size: 24,weight:.bold))
+                if let currentUser = vm.currentUserDB ,
+                   let urlString = currentUser.photoUrl,
+                   let name = currentUser.name
+                {
+                    WebImage(url: URL(string: urlString)) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width:50,height: 50)
+                                .clipped()
+                                .cornerRadius(50)
+                                .overlay(RoundedRectangle(cornerRadius: 44)
+                                    .stroke(Color(.label),lineWidth: 1)
+                                )
+                                .shadow(radius: 5)
+                          
 
+                        } placeholder: {
+                            Image(.profilePic)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 60,height: 60)
+                                .padding()
+                        }
+                        .onTapGesture {
+                            withAnimation(.bouncy){
+                                tabSelection = 2
+                            }
+                        }
+
+                    Button {
+                        withAnimation(.bouncy) {
+                            showWantToTalkMenu.toggle()
+                        }
+                    } label: {
+                        Text("\(name) \(currentUser.wantToTalk.rawValue)")
+                            .font(.system(size: 24,weight:.bold))
+                            .frame(height:55)
+                    }
+
+                }
+                
+                
+                
+                Spacer()
+                
             }
+            .padding()
             
-            
-            
-            Spacer()
-            
+            if showWantToTalkMenu{
+                wantToTalkSection
+            }
         }
-        .padding() 
         
     }
     
+    private var wantToTalkSection:some View{
+        VStack(alignment: .center){
+            HStack{
+                Button {
+                    withAnimation(.bouncy) {
+                        showWantToTalkMenu = false
+                    }
+                } label: {
+                    Image(systemName: "x.circle.fill")
+                        .font(.headline)
+                        .padding(.horizontal)
+                }
+                Spacer()
+
+            }
+            HStack{
+                ForEach(WantToTalk.allCases, id: \.self) { level in
+                    Button {
+                        if vm.wantToTalk == level{
+                            vm.showMessage(alertMessage: "確認")
+                        }
+                        withAnimation(.bouncy) {
+                            vm.wantToTalk = level
+                        }
+                    } label: {
+                        ZStack{
+                            if vm.wantToTalk == level{
+                                    RoundedRectangle(cornerRadius: 10)
+                                    .fill(.customOrange)
+                                        .frame(width:vm.wantToTalk == level ? 80: 50,height: 55)
+                                        .cornerRadius(30)
+                                        .matchedGeometryEffect(id: "backGroundRectangleId", in: nameSpace)
+                            }
+                            Text(level.rawValue)
+                                .font(.system(size: vm.wantToTalk == level ? 50 : 30))
+                                .cornerRadius(90)
+                        }
+                        
+                    }
+                    
+                }
+            }
+            .background(.white)
+            .cornerRadius(80)
+        }
+    }
     
+
    // MARKS : messagesView
     private var messagesView:some View{
         ForEach(vm.recentMessages) { recentMessage in
