@@ -186,6 +186,14 @@ struct ProfileView: View {
             ScrollView(showsIndicators:false){
                 VStack(spacing: 10) {
                     ImagePickerView
+                        .overlay(alignment: .topLeading, content: {
+                            if !isUser{
+                                if let wantToTalk = vm.user?.wantToTalk.rawValue{
+                                    Text(wantToTalk)
+                                        .font(.title)
+                                }
+                            }
+                        })
                         .onAppear{
                             checkThePermission()
                         }

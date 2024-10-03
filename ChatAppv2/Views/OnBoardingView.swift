@@ -8,6 +8,7 @@ final class OnboardingViewModel: ObservableObject {
     @Published var preferences: [String] = []
     @Published var imageSelection:PhotosPickerItem? = nil
     @Published var profileImage:UIImage? = nil
+    @Published var wantToTalk :WantToTalk = .Three
     
 //    var tokens:GoogleSignInResultModel? = nil
     
@@ -123,7 +124,8 @@ extension OnboardingViewModel{
                 photoUrl: photoURL,
                 preferences: preferences,
                 name: name,
-                age: age
+                age: age,
+                wantToTalk: wantToTalk
             )
             
             // Save user data
@@ -160,8 +162,8 @@ extension OnboardingViewModel {
     }
 }
 
-
 struct OnboardingView: View {
+    @State private var dragOffset: CGSize = .zero
     @State var onboardingState: Int = 0
     let transition: AnyTransition = .asymmetric(
         insertion: .move(edge: .trailing),
@@ -189,6 +191,7 @@ struct OnboardingView: View {
         "星座観察", "気象観測", "グランピング", "サバイバルキャンプ", "ロッククライミング",
         "パラグライダー", "スカイダイビング", "バンジージャンプ", "カヌー", "ラフティング"
     ]
+    @Namespace var nameSpace
     var body: some View {
             ZStack {
                 Color.customBlack.ignoresSafeArea()
@@ -207,6 +210,9 @@ struct OnboardingView: View {
                         addGenderSection
                             .transition(transition)
                     case 4:
+                        wantToTalkSection
+                            .transition(transition)
+                    case 5:
                         userInterestsSection
                             .transition(transition)
                     default:
@@ -404,6 +410,42 @@ extension OnboardingView {
         .padding(30)
     }
     
+    private var wantToTalkSection:some View{
+        VStack(alignment: .center){
+            Text("今の気分は？")
+                .foregroundStyle(Color.white)
+                .font(.largeTitle)
+            HStack{
+                ForEach(WantToTalk.allCases, id: \.self) { level in
+                    Button {
+                        withAnimation(.bouncy) {
+                            vm.wantToTalk = level
+                        }
+                    } label: {
+                        ZStack{
+                            if vm.wantToTalk == level{
+                                    RoundedRectangle(cornerRadius: 10)
+                                    .fill(.customOrange)
+                                        .frame(width:vm.wantToTalk == level ? 80: 50,height: 55)
+                                        .cornerRadius(30)
+                                        .padding(.vertical,4)
+                                        .matchedGeometryEffect(id: "backGroundRectangleId", in: nameSpace)
+                            }
+                            Text(level.rawValue)
+                                .font(.system(size: vm.wantToTalk == level ? 50 : 30))
+                                .cornerRadius(90)
+                        }
+                        
+                    }
+                    
+                }
+            }
+            .padding(.horizontal)
+            .background(.white)
+            .cornerRadius(80)
+        }
+    }
+    
     private var userInterestsSection: some View {
         VStack(spacing: 20) {
             Text("興味のある分野を選択してください")
@@ -481,7 +523,12 @@ extension OnboardingView {
             withAnimation(.spring()) {
                 onboardingState += 1
             }
+            
         case 4:
+            withAnimation {
+                onboardingState += 1
+            }
+        case 5:
             guard !vm.preferences.isEmpty else {
                 vm.showAlertTitle(title: "少なくとも1つの興味を選択してください！")
                 return
