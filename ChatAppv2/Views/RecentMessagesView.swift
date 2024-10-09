@@ -210,7 +210,7 @@ struct RecentMessagesView: View {
                             }
                             .onTapGesture {
                                 if let _ = vm.currentUserDB{
-                                    tabSelection = 2
+                                    tabSelection = 1
                                     print("Clicked")
                                 }
                                 
