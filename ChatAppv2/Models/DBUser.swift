@@ -27,6 +27,7 @@ struct DBUser:Identifiable, Codable , Hashable {
     let age : Double?
     let chatIds:[String]
     var wantToTalk:WantToTalk = .Three
+    var bio:String = "こんにちは。。"
     
     
     init(recentMessage:MessageModel,currentUser:DBUser){
@@ -63,6 +64,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.age = 0
         self.chatIds = []
         self.wantToTalk = .Three
+        self.bio = ""
     }
     
     init(data:[String:Any]){
@@ -81,9 +83,10 @@ struct DBUser:Identifiable, Codable , Hashable {
         } else {
             self.wantToTalk = .Three // Default to "😐"
         }
+        self.bio = data[CodingKeys.bio.rawValue] as? String ?? "こんにちは。。"
     }
     
-    init(authDataResult : AuthDataResultModel,photoUrl:String?,preferences:[String],name:String,age:Double,wantToTalk:WantToTalk){
+    init(authDataResult : AuthDataResultModel,photoUrl:String?,preferences:[String],name:String,age:Double,wantToTalk:WantToTalk,bio:String){
         self.userId = authDataResult.uid
         self.email = authDataResult.email
         self.photoUrl = photoUrl?.description
@@ -93,6 +96,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         self.age = age
         self.chatIds = []
         self.wantToTalk = wantToTalk
+        self.bio = bio
     }
 
     
@@ -106,6 +110,7 @@ struct DBUser:Identifiable, Codable , Hashable {
         case name = "name"
         case chatIds = "chat_ids"
         case wantToTalk = "want_to_talk"
+        case bio = "bio"
     }
     
     init(from decoder: Decoder) throws {
@@ -120,6 +125,7 @@ struct DBUser:Identifiable, Codable , Hashable {
          self.age = try container.decodeIfPresent(Double.self, forKey: .age)
         self.chatIds = try container.decodeIfPresent([String].self, forKey: .chatIds) ?? []
         self.wantToTalk = try container.decode(WantToTalk.self, forKey: .wantToTalk)
+        self.bio = try container.decode(String.self, forKey: .bio)
      }
      
      func encode(to encoder: Encoder) throws {
@@ -133,7 +139,7 @@ struct DBUser:Identifiable, Codable , Hashable {
          try container.encodeIfPresent(self.age, forKey: .age)
          try container.encodeIfPresent(self.chatIds, forKey: .chatIds)
          try container.encodeIfPresent(self.wantToTalk, forKey: .wantToTalk)
+         try container.encodeIfPresent(self.bio, forKey: .bio)
      }
-    
 }
 

@@ -119,14 +119,15 @@ extension OnboardingViewModel{
 //            let photoURL = try await UserManager.shared.saveImageInStorage(image: profileImage, userId: authDataResult.uid){ percentCompleted in
 //                await updateProgress(0.6)
 //            }
-
+            
             let newUser = DBUser(
                 authDataResult: authDataResult,
                 photoUrl: photoURL,
                 preferences: preferences,
                 name: name,
                 age: age,
-                wantToTalk: wantToTalk
+                wantToTalk: wantToTalk,
+                bio: bio.isEmpty ? "こんにちは。。" : bio
             )
             
             // Save user data
@@ -165,7 +166,7 @@ extension OnboardingViewModel {
 
 struct OnboardingView: View {
     @State private var dragOffset: CGSize = .zero
-    @State var onboardingState: Int = 4
+    @State var onboardingState: Int = 0
     let transition: AnyTransition = .asymmetric(
         insertion: .move(edge: .trailing),
         removal: .move(edge: .leading))
@@ -238,7 +239,6 @@ struct OnboardingView: View {
                            Text("\(Int(vm.progress * 100))%")
                                .foregroundColor(.black)
                                .font(.headline)
-
                        }
                    }
             }
