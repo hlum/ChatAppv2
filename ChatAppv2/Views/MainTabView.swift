@@ -79,6 +79,7 @@ enum TabItems:Int,CaseIterable{
 }
 
 struct MainTabView: View {
+    @Namespace var nameSpace
     @StateObject var vm = MainTabViewModel()
     
     @State var tabSelection: Int = 0
@@ -136,25 +137,33 @@ struct MainTabView: View {
 
 extension MainTabView {
     func customTabBar(item:TabItems,isActive:Bool)->some View{
-        HStack{
-            if #available(iOS 18.0, *) {
-                Image(systemName: item.imageName)
-                    .tint(isActive ? .white : .gray)
-                    .symbolEffect(.wiggle, options: .default, value: tabSelection)
-                    .font(.title)
-            } else {
-                // Fallback on earlier versions
-                Image(systemName: item.imageName)
-                    .tint(isActive ? .white : .gray)
-                    .symbolEffect(.bounce, options: .default, value: tabSelection)
-                    .font(.title3)
+        ZStack{
+            if isActive{
+                RoundedRectangle(cornerRadius: 30)
+                    .fill(Color.orange)
+                    .frame(width:100,height:40)
+                    .matchedGeometryEffect(id: "TabItemId", in: nameSpace)
             }
+            HStack{
+                if #available(iOS 18.0, *) {
+                    Image(systemName: item.imageName)
+                        .tint(isActive ? .white : .gray)
+                        .symbolEffect(.wiggle, options: .default, value: tabSelection)
+                        .font(.title)
+                } else {
+                    // Fallback on earlier versions
+                    Image(systemName: item.imageName)
+                        .tint(isActive ? .white : .gray)
+                        .symbolEffect(.bounce, options: .default, value: tabSelection)
+                        .font(.title3)
+                }
                 
+            }
+            .frame(width: isActive ? 100 : 60)
+            .frame(height: 40)
+//            .background(isActive ? .orange : .clear)
+            .cornerRadius(30)
         }
-        .frame(width: isActive ? 100 : 60)
-        .frame(height: 40)
-        .background(isActive ? .orange : .clear)
-        .cornerRadius(30)
     }
 }
 
