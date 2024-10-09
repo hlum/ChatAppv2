@@ -113,7 +113,7 @@ struct FindNewFriendView: View {
                         await vm.refresh()
                     }
                     .fullScreenCover(item: $otherUser) { otherUser in
-                        ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false, isUser: false)
+                        ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false, isUser: false, showTabBar: .constant(true))
                         }
         }
     }

@@ -9,6 +9,7 @@ final class OnboardingViewModel: ObservableObject {
     @Published var imageSelection:PhotosPickerItem? = nil
     @Published var profileImage:UIImage? = nil
     @Published var wantToTalk :WantToTalk = .Three
+    @Published var bio:String = ""
     
 //    var tokens:GoogleSignInResultModel? = nil
     
@@ -118,14 +119,15 @@ extension OnboardingViewModel{
 //            let photoURL = try await UserManager.shared.saveImageInStorage(image: profileImage, userId: authDataResult.uid){ percentCompleted in
 //                await updateProgress(0.6)
 //            }
-
+            
             let newUser = DBUser(
                 authDataResult: authDataResult,
                 photoUrl: photoURL,
                 preferences: preferences,
                 name: name,
                 age: age,
-                wantToTalk: wantToTalk
+                wantToTalk: wantToTalk,
+                bio: bio.isEmpty ? "こんにちは。。" : bio
             )
             
             // Save user data
@@ -237,7 +239,6 @@ struct OnboardingView: View {
                            Text("\(Int(vm.progress * 100))%")
                                .foregroundColor(.black)
                                .font(.headline)
-
                        }
                    }
             }
@@ -253,7 +254,7 @@ struct OnboardingView: View {
 extension OnboardingView {
     private var signUpButton: some View {
         Text(onboardingState == 0 ? "サインアップ" :
-             onboardingState == 4 ? "完了" :
+             onboardingState == 5 ? "完了" :
              "次へ")
             .font(.headline)
             .foregroundColor(Color(.customWhite))
@@ -407,10 +408,27 @@ extension OnboardingView {
     }
     
     private var wantToTalkSection:some View{
-        VStack(alignment: .center){
-            Text("今の気分は？")
+        VStack{
+            Text("自己紹介")
                 .foregroundStyle(Color.white)
                 .font(.largeTitle)
+                .frame(maxWidth: .infinity,alignment: .leading)
+                .padding(.leading)
+            TextField("簡単な自己紹介を入力してください", text: $vm.bio)
+                .font(.headline)
+                .frame(height: 55)
+                .padding(.horizontal)
+                .background(.white)
+                .cornerRadius(10)
+                .padding(.horizontal)
+
+            Text("今の気分は？")
+                .foregroundStyle(Color.white)
+                .font(.headline)
+                .frame(maxWidth: .infinity,alignment: .leading)
+                .padding(.leading)
+                .padding(.top)
+            
             HStack{
                 ForEach(WantToTalk.allCases, id: \.self) { level in
                     Button {
