@@ -228,20 +228,16 @@ struct OnboardingView: View {
                 .padding(30)
                 
                    if vm.isLoading {
-                       Color.black.opacity(0.5).ignoresSafeArea()
-                       VStack {
-                           ProgressView()
-                               .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                               .scaleEffect(2)
+                       ZStack {
+                           Color.white.ignoresSafeArea()
+                           LottieView(animationFileName: "dancing_cat", loopMode: .loop)
+                               .ignoresSafeArea()
                            
-                           ProgressView(value: vm.progress)
-                               .frame(width: 200)
-                               .tint(.white)
-                               .padding()
                            
                            Text("\(Int(vm.progress * 100))%")
-                               .foregroundColor(.white)
+                               .foregroundColor(.black)
                                .font(.headline)
+
                        }
                    }
             }

@@ -10,10 +10,11 @@ import Firebase
 
 @main
 struct ChatAppv2App: App {
+    @State var isActive = false
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            SplashView(isAvtive: $isActive)
         }
     }
 

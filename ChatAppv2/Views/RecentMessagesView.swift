@@ -241,23 +241,19 @@ struct RecentMessagesView: View {
                 }
                 .toolbar(.hidden)
                 
-                if vm.isLoading {
-                    Color.black.opacity(0.8).ignoresSafeArea()
-                    VStack {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(2)
-                        
-                        ProgressView(value: vm.progress)
-                            .frame(width: 200)
-                            .tint(.white)
-                            .padding()
-                        
-                        Text("\(Int(vm.progress * 100))%")
-                            .foregroundColor(.white)
-                            .font(.headline)
-                    }
-                }
+//                if vm.isLoading {
+//                    ZStack {
+//                        
+//                        LottieView(animationFileName: "dancing_cat", loopMode: .loop)
+//                            .ignoresSafeArea()
+//                        
+//                        
+//                        Text("\(Int(vm.progress * 100))%")
+//                            .foregroundColor(.black)
+//                            .font(.headline)
+//
+//                    }
+//                }
                 
             }//End of ZStack
             .alert(vm.alertMessage, isPresented: $vm.showAlert) {
