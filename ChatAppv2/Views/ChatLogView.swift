@@ -29,6 +29,9 @@ class ChatLogViewModel: ObservableObject {
     
     private var lastUpdateTimestamp: TimeInterval = 0
     
+    @Published var showAlert: Bool = false
+    @Published var alertTitle: String = ""
+    
 
     init(recipient: DBUser) {
         self.recipient = recipient
@@ -133,7 +136,12 @@ class ChatLogViewModel: ObservableObject {
             }
         }
     }
- 
+    
+    @MainActor
+    func showAlert(alertTitle:String){
+        self.alertTitle = alertTitle
+        showAlert = true
+    }
     
     @MainActor
     func handleMessageChanges(message:MessageModel,changeType:DocumentChangeType){
@@ -233,6 +241,9 @@ struct ChatLogView:View {
                     ChatBottomBar
                 }
                 
+            }
+            .alert(isPresented: $vm.showAlert) {
+                Alert(title: Text(vm.alertTitle))
             }
             .background(.white)
             .safeAreaInset(edge: .top) {
@@ -385,15 +396,17 @@ extension ChatLogView{
     
     private var ChatBottomBar: some View{
         HStack(spacing:16){
-            Image(systemName: "photo.on.rectangle")
-                .font(.title)
             TextField("Description.....", text: $vm.textFieldText,axis: .vertical)
                 .submitLabel(.return)
                 .focused($isFocused)
 
             Button {
-                Task{
-                    await vm.sendMessage2()
+                if vm.textFieldText.count >= 60{
+                    vm.showAlert(alertTitle: "メッセージは60文字以下で入力してください")
+                }else{
+                    Task{
+                        await vm.sendMessage2()
+                    }
                 }
                 
             } label: {
