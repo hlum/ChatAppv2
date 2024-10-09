@@ -247,7 +247,7 @@ struct ChatLogView:View {
                 }
             }
             .fullScreenCover(isPresented: $isShowingProfile) {
-                ProfileView(passedUserId: vm.recipient?.userId ?? "", isUserCurrentlyLogOut: .constant(false), isFromChatView: true)
+                ProfileView(passedUserId: vm.recipient?.userId ?? "", isUserCurrentlyLogOut: .constant(false), isFromChatView: true, isUser: false, showTabBar: .constant(true))
             }
             
             .task {
@@ -265,7 +265,7 @@ struct ChatLogView:View {
 
 extension ChatLogView{
     private var customNavBar: some View {
-                HStack {
+        HStack {
                     Button {
                         presentationMode.wrappedValue.dismiss()
                     } label: {

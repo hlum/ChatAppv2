@@ -26,7 +26,7 @@ final class OtherUserViewModel:ObservableObject{
         let userPreferences = user.preferences
         for userPreference in userPreferences{
             if othersPreferences.contains(userPreference){
-                if matchLevel < 8{
+                if matchLevel < 7{
                     matchLevel += 1
                 }
             }
@@ -46,6 +46,12 @@ struct OtherUserView: View {
         ZStack{
             HStack(spacing:0){
                 profilePic
+                    .overlay(alignment: .topLeading, content: {
+                        Text("\( vm.otherUser.wantToTalk.rawValue)")
+                            .font(.system(size: 20))
+                            .offset(x:-7,y:-7)
+                    })
+                    
                     .padding(.horizontal)
                 nameAndAge
                 Spacer()
@@ -113,33 +119,4 @@ extension OtherUserView{
                 .foregroundStyle(Color.gray)
         }
     }
-}
-
-#Preview {
-    let currentUser = DBUser(
-        id: "",
-        userId: "",
-        name: "user",
-        email: "user@gmail.com",
-        photoUrl: "https://cdn.pixabay.com/photo/2018/11/13/22/01/avatar-3814081_640.png",
-        dateCreated: Timestamp(date: Date()),
-        preferences: ["1","2","3","4"],
-        age: 17,
-        chatIds: []
-    )
-    
-    OtherUserView(
-        user:currentUser,
-        otherUser:DBUser(
-            id: "",
-            userId: "",
-            name: "土井舜太郎",
-            email: "hlum@gmail.com",
-            photoUrl: "https://cdn.pixabay.com/photo/2018/11/13/22/01/avatar-3814081_640.png",
-            dateCreated: Timestamp(date: Date()),
-            preferences: ["1","2","3","4"],
-            age: 13,
-            chatIds: []
-        )
-    )
 }

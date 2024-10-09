@@ -10,15 +10,12 @@ import Firebase
 
 @main
 struct ChatAppv2App: App {
+    @State var isActive = false
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-
-    init() {
-        FirebaseApp.configure() // Configure Firebase once
-    }
-
     var body: some Scene {
         WindowGroup {
-            MainMessageView()
+//            OnboardingView(isUserCurrentlyLoggedOut: .constant(true))
+            SplashView(isAvtive: $isActive)
         }
     }
 
@@ -27,6 +24,7 @@ struct ChatAppv2App: App {
         
         func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
             // Your custom configuration
+            FirebaseApp.configure()
             return true
         }
     }

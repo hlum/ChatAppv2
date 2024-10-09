@@ -8,6 +8,8 @@ final class OnboardingViewModel: ObservableObject {
     @Published var preferences: [String] = []
     @Published var imageSelection:PhotosPickerItem? = nil
     @Published var profileImage:UIImage? = nil
+    @Published var wantToTalk :WantToTalk = .Three
+    @Published var bio:String = ""
     
 //    var tokens:GoogleSignInResultModel? = nil
     
@@ -117,13 +119,15 @@ extension OnboardingViewModel{
 //            let photoURL = try await UserManager.shared.saveImageInStorage(image: profileImage, userId: authDataResult.uid){ percentCompleted in
 //                await updateProgress(0.6)
 //            }
-
+            
             let newUser = DBUser(
                 authDataResult: authDataResult,
                 photoUrl: photoURL,
                 preferences: preferences,
                 name: name,
-                age: age
+                age: age,
+                wantToTalk: wantToTalk,
+                bio: bio.isEmpty ? "こんにちは。。" : bio
             )
             
             // Save user data
@@ -160,8 +164,8 @@ extension OnboardingViewModel {
     }
 }
 
-
 struct OnboardingView: View {
+    @State private var dragOffset: CGSize = .zero
     @State var onboardingState: Int = 0
     let transition: AnyTransition = .asymmetric(
         insertion: .move(edge: .trailing),
@@ -189,6 +193,7 @@ struct OnboardingView: View {
         "星座観察", "気象観測", "グランピング", "サバイバルキャンプ", "ロッククライミング",
         "パラグライダー", "スカイダイビング", "バンジージャンプ", "カヌー", "ラフティング"
     ]
+    @Namespace var nameSpace
     var body: some View {
             ZStack {
                 Color.customBlack.ignoresSafeArea()
@@ -207,6 +212,9 @@ struct OnboardingView: View {
                         addGenderSection
                             .transition(transition)
                     case 4:
+                        wantToTalkSection
+                            .transition(transition)
+                    case 5:
                         userInterestsSection
                             .transition(transition)
                     default:
@@ -222,19 +230,14 @@ struct OnboardingView: View {
                 .padding(30)
                 
                    if vm.isLoading {
-                       Color.black.opacity(0.5).ignoresSafeArea()
-                       VStack {
-                           ProgressView()
-                               .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                               .scaleEffect(2)
+                       ZStack {
+                           Color.white.ignoresSafeArea()
+                           LottieView(animationFileName: "dancing_cat", loopMode: .loop)
+                               .ignoresSafeArea()
                            
-                           ProgressView(value: vm.progress)
-                               .frame(width: 200)
-                               .tint(.white)
-                               .padding()
                            
                            Text("\(Int(vm.progress * 100))%")
-                               .foregroundColor(.white)
+                               .foregroundColor(.black)
                                .font(.headline)
                        }
                    }
@@ -251,7 +254,7 @@ struct OnboardingView: View {
 extension OnboardingView {
     private var signUpButton: some View {
         Text(onboardingState == 0 ? "サインアップ" :
-             onboardingState == 4 ? "完了" :
+             onboardingState == 5 ? "完了" :
              "次へ")
             .font(.headline)
             .foregroundColor(Color(.customWhite))
@@ -270,7 +273,7 @@ extension OnboardingView {
     private var welcomeSection: some View {
         VStack(spacing: 40) {
             Spacer()
-            Text("チャットを始めましょう")
+            Text("友達を探しましょう。。")
                 .font(.largeTitle)
                 .fontWeight(.semibold)
                 .foregroundColor(Color.customWhite)
@@ -281,7 +284,7 @@ extension OnboardingView {
                         .foregroundColor(.white),
                     alignment: .bottom
                 )
-            Text("これはオンラインマッチングのための人気No.1アプリです...")
+            Text("校内の同じ趣味を持っている人と話し合いましょう。。")
                 .fontWeight(.medium)
                 .foregroundColor(Color.customWhite)
             Spacer()
@@ -404,6 +407,59 @@ extension OnboardingView {
         .padding(30)
     }
     
+    private var wantToTalkSection:some View{
+        VStack{
+            Text("自己紹介")
+                .foregroundStyle(Color.white)
+                .font(.largeTitle)
+                .frame(maxWidth: .infinity,alignment: .leading)
+                .padding(.leading)
+            TextField("簡単な自己紹介を入力してください", text: $vm.bio)
+                .font(.headline)
+                .frame(height: 55)
+                .padding(.horizontal)
+                .background(.white)
+                .cornerRadius(10)
+                .padding(.horizontal)
+
+            Text("今の気分は？")
+                .foregroundStyle(Color.white)
+                .font(.headline)
+                .frame(maxWidth: .infinity,alignment: .leading)
+                .padding(.leading)
+                .padding(.top)
+            
+            HStack{
+                ForEach(WantToTalk.allCases, id: \.self) { level in
+                    Button {
+                        withAnimation(.bouncy) {
+                            vm.wantToTalk = level
+                        }
+                    } label: {
+                        ZStack{
+                            if vm.wantToTalk == level{
+                                    RoundedRectangle(cornerRadius: 10)
+                                    .fill(.customOrange)
+                                        .frame(width:vm.wantToTalk == level ? 80: 50,height: 55)
+                                        .cornerRadius(30)
+                                        .padding(.vertical,4)
+                                        .matchedGeometryEffect(id: "backGroundRectangleId", in: nameSpace)
+                            }
+                            Text(level.rawValue)
+                                .font(.system(size: vm.wantToTalk == level ? 50 : 30))
+                                .cornerRadius(90)
+                        }
+                        
+                    }
+                    
+                }
+            }
+            .padding(.horizontal)
+            .background(.white)
+            .cornerRadius(80)
+        }
+    }
+    
     private var userInterestsSection: some View {
         VStack(spacing: 20) {
             Text("興味のある分野を選択してください")
@@ -481,7 +537,12 @@ extension OnboardingView {
             withAnimation(.spring()) {
                 onboardingState += 1
             }
+            
         case 4:
+            withAnimation {
+                onboardingState += 1
+            }
+        case 5:
             guard !vm.preferences.isEmpty else {
                 vm.showAlertTitle(title: "少なくとも1つの興味を選択してください！")
                 return

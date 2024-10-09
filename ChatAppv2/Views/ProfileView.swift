@@ -16,6 +16,7 @@ final class ProfileViewModel:ObservableObject{
     @Published var user :DBUser? = nil
     @Published var passedUserId:String? = nil
     @Published var newName:String = ""
+    @Published var newBio:String = ""
     
     @Published var imageSelection:PhotosPickerItem? = nil
     
@@ -23,8 +24,6 @@ final class ProfileViewModel:ObservableObject{
     @Published var alertTitle:String = ""
     
     @Published var editingOption:EditingOprions? = nil
-    
-    @Published var isUser: Bool = false
 
 
     init(passedUserId:String){
@@ -77,28 +76,35 @@ final class ProfileViewModel:ObservableObject{
         user?.preferences.contains(text) == true
     }
     
-    func checkTheUser(uid:String){
-        guard let currentUser = try? AuthenticationManager.shared.getAuthenticatedUser() else{
-            print("ProfileViewModel/checkTheUser : Can't get the current user")
-            return
-        }
-        self.isUser = currentUser.uid == uid
+    func loadAuthenticatedUser() async{
+        guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser() else{return}
         
+        if let fetchedUser = try? await UserManager.shared.getUser(userId: authDataResult.uid) {
+            DispatchQueue.main.async {
+                self.user = fetchedUser
+            }
+        }
     }
     
-    func loadCurrentUser()throws {
+    func loadCurrentUser()async throws {
         guard let passedUserId = self.passedUserId else{
             print("ProfileViewModel/loadCurrentUser : Can't get the passedUserId")
+            await loadAuthenticatedUser()
             return
         }
         Task{
             if let fetchedUser = try? await UserManager.shared.getUser(userId: passedUserId){
                 await MainActor.run {
-                    checkTheUser(uid: passedUserId)
                     self.user = fetchedUser
                 }
             }
         }
+    }
+    
+    func updateBio()async{
+        guard let user = self.user else{return}
+        try? await UserManager.shared.updateUserBio(userId: user.userId, newBio: newBio)
+        try? await reloadUser()
     }
     
     func updateName() async{
@@ -161,17 +167,23 @@ final class ProfileViewModel:ObservableObject{
 enum EditingOprions{
     case EditingName
     case EditiingPreferences
+    case EditingBio
 }
 struct ProfileView: View {
     @Environment(\.presentationMode) var presentationMode
     @Binding var isUserCurrentlyLogOut:Bool
     @StateObject var vm : ProfileViewModel
+    var isUser:Bool
     var isFromChatView:Bool
+    @State var user : DBUser? = nil
+    @Binding var showTabBar:Bool
     
-    init(passedUserId:String,isUserCurrentlyLogOut:Binding<Bool>,isFromChatView:Bool){
+    init(passedUserId:String,isUserCurrentlyLogOut:Binding<Bool>,isFromChatView:Bool,isUser:Bool,showTabBar:Binding<Bool>){
         _vm = StateObject(wrappedValue: ProfileViewModel(passedUserId: passedUserId))
+        self.isUser = isUser
         _isUserCurrentlyLogOut = isUserCurrentlyLogOut
         self.isFromChatView = isFromChatView
+        _showTabBar = showTabBar
     }
 
     // Custom colors
@@ -184,12 +196,20 @@ struct ProfileView: View {
             ScrollView(showsIndicators:false){
                 VStack(spacing: 10) {
                     ImagePickerView
+                        .overlay(alignment: .topLeading, content: {
+                            if !isUser{
+                                if let wantToTalk = vm.user?.wantToTalk.rawValue{
+                                    Text(wantToTalk)
+                                        .font(.title)
+                                }
+                            }
+                        })
                         .onAppear{
                             checkThePermission()
                         }
                     
                         .overlay(alignment:.bottomTrailing) {
-                            if vm.isUser{
+                            if isUser{
                                 Image(systemName: "pencil.circle.fill")
                                     .font(.title2)
                                     .foregroundStyle(Color(.customOrange))
@@ -201,18 +221,26 @@ struct ProfileView: View {
                             }
 
                         }
+                        .onChange(of: vm.editingOption) { _, _ in
+                            if vm.editingOption == nil{
+                                showTabBar = true
+                            }else{
+                                showTabBar = false
+                            }
+                        }
                     
                     Text(vm.user?.name ?? "Error" )
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.white)
                         .onTapGesture {
-                            if vm.isUser{
+                            if isUser{
                                 withAnimation {
                                     vm.editingOption = .EditingName
                                 }
                             }
                         }
                     
+                        userBioSection
                     // User Email
                         if let email = vm.user?.email{
                             Text(email.replacingOccurrences(of: "@jec.ac.jp", with: ""))
@@ -228,25 +256,71 @@ struct ProfileView: View {
                                 .foregroundColor(subtitleColor)
                         }
                     
+                   
                     preferencesSection
                     
                     Spacer()
                     
-                    
+                    if vm.editingOption == nil && !vm.isLoading && isUser {
+                        signOutButton
+                    }
+                    if !isUser{
+                        if let user = vm.user{
+                            if isFromChatView{
+                                Button {
+                                    presentationMode.wrappedValue.dismiss()
+                                } label: {
+                                    Text("メッセージを送る")
+                                        .font(.headline)
+                                        .padding()
+                                        .frame(maxWidth: .infinity)
+                                        .background(.blue)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(10)
+                                        .shadow(radius: 20)
+
+                                }
+                            }
+                            else{
+                                Button {
+                                    self.user = user
+                                } label: {
+                                    Text("メッセージを送る")
+                                        .font(.headline)
+                                        .padding()
+                                        .frame(maxWidth: .infinity)
+                                        .background(.blue)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(10)
+                                        .shadow(radius: 20)
+                                }
+
+                            }
+                            
+                            Spacer()
+                        }
+
+                    }
+
                 }
                 .padding()
                 .background(Color.customBlack)
                 .cornerRadius(15)
                 .shadow(color: .gray.opacity(0.2), radius: 10, x: 0, y: 5)
                 .padding()
-                .navigationTitle(vm.isUser ? "Your Profile" : "\(vm.user?.name ?? "User")'s Profile")
+                .navigationTitle(isUser ? "Your Profile" : "\(vm.user?.name ?? "User")'s Profile")
                 .navigationBarTitleDisplayMode(.inline)
+                .padding(.bottom,50) //for the tab bar
                 .alert(isPresented: $vm.showAlert) {
                     Alert(title: Text(vm.alertTitle))
                 }
-                .onAppear{
-                    try? vm.loadCurrentUser()
+                .task{
+                    try? await vm.loadCurrentUser()
                 }
+                .fullScreenCover(item: $user) { user in
+                    ChatLogView(recipient:user)
+                }
+
                 
             }
             .safeAreaInset(edge: .top, content: {
@@ -262,6 +336,8 @@ struct ProfileView: View {
                 userInterestsSection
             case nil:
                 Text("")
+            case .EditingBio:
+                changeBioView
             }
             if vm.isLoading {
                 Color.black.opacity(0.8).ignoresSafeArea()
@@ -281,78 +357,43 @@ struct ProfileView: View {
                 }
             }
         }
-        .overlay(alignment: .bottom, content: {
-            if vm.editingOption == nil && !vm.isLoading && vm.isUser {
-                Button {
-                    vm.logOut()
-                    isUserCurrentlyLogOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
-                    presentationMode.wrappedValue.dismiss()
-                } label: {
-                    Text("サインアウトする")
-                        .font(.headline)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(.red)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                        .padding()
-                        .shadow(radius: 20)
-                }
-            }
-            if !vm.isUser{
-                if let user = vm.user{
-                    if isFromChatView{
-                        Button {
-                            presentationMode.wrappedValue.dismiss()
-                        } label: {
-                            Text("メッセージを送る")
-                                .font(.headline)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(10)
-                                .padding()
-                                .shadow(radius: 20)
-                        }
-                    }
-                    else{
-                        NavigationLink {
-                            ChatLogView(recipient: user)
-                        } label: {
-                            Text("メッセージを送る")
-                                .font(.headline)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(10)
-                                .padding()
-                                .shadow(radius: 20)
-                        }
-                    }
-                }
-
-            }
-        })
         .toolbar(.hidden)
     }
-    
+    private var userBioSection:some View{
+        HStack{
+            Text(vm.user?.bio ?? "こんにちは..")
+                .font(.subheadline)
+                .foregroundColor(subtitleColor)
+                .multilineTextAlignment(.center)
+            if isUser{
+                Button {
+                    vm.editingOption = .EditingBio
+                } label: {
+                    Image(systemName: "pencil")
+                        .font(.title2)
+                        .foregroundStyle(Color(.blue))
+                }
+            }
+
+        }
+    }
     private var customNavBar:some View{
         HStack{
-            Button{
-                presentationMode.wrappedValue.dismiss()
-            } label: {
-                Image(systemName: "arrow.left")
-                    .font(.title)
-                    .foregroundColor(.blue)
+            if !isUser{
+                Button{
+                    presentationMode.wrappedValue.dismiss()
+                } label: {
+                    Image(systemName: "arrow.left")
+                        .font(.title)
+                        .foregroundColor(.blue)
+                }
             }
 
             Spacer()
             if let user = vm.user,
                let name = user.name
             {
-                Text(vm.isUser ? "Your Profile" : "\(name)'s Profile")
+                Text(isUser ? "Your Profile" : "\(name)'s Profile")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.black)
@@ -373,7 +414,7 @@ struct ProfileView: View {
                     .foregroundColor(accentColor)
                     .padding(.bottom, 4)
                 Spacer()
-                if vm.isUser{
+                if isUser{
                     Button {
                         vm.editingOption = .EditiingPreferences
                     } label: {
@@ -473,17 +514,23 @@ struct ProfileView: View {
 
         }
     }
-
-    // Function to save changes
-    private func saveChanges() {
-        if vm.newName.isEmpty{
-            vm.showAlert(title: "新しい名前を入力してください！！")
-        }else{
-            Task{
-                await vm.updateName()
-            }
+    
+    private var signOutButton:some View{
+        Button {
+            vm.logOut()
+            isUserCurrentlyLogOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
+        } label: {
+            Text("サインアウトする")
+                .font(.headline)
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(.red)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                .shadow(radius: 20)
         }
     }
+
     
     private func saveNewName(){
         if vm.newName.isEmpty{
@@ -496,6 +543,19 @@ struct ProfileView: View {
                 }
             }
             
+        }
+    }
+    
+    private func saveNewBio(){
+        if vm.newBio.isEmpty{
+            vm.showAlert(title: "新しい自己紹介を入力してください！！")
+        }else{
+            Task{
+                await vm.updateBio()
+                DispatchQueue.main.async {
+                    vm.editingOption = nil
+                }
+            }
         }
     }
     
@@ -513,7 +573,7 @@ struct ProfileView: View {
 extension ProfileView{
     private var ImagePickerView : some View{
         VStack{
-            if vm.isUser{
+            if isUser{
                 PhotosPicker(selection: $vm.imageSelection,matching: .images) {
                     profileImage
                 }
@@ -581,7 +641,7 @@ extension ProfileView{
                             .font(.headline)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(.blue.gradient)
+                            .background(.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                             .padding(.horizontal)
@@ -593,7 +653,63 @@ extension ProfileView{
                             .font(.headline)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(.red.gradient)
+                            .background(.red)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                            .padding(.horizontal)
+                    }
+                }
+                .padding(.bottom)
+
+            }
+            .padding()
+        }
+    }
+    
+    private var changeBioView:some View{
+        ZStack{
+            Color.black.opacity(0.9).ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation {
+                        vm.editingOption = nil
+                    }
+                }
+            VStack{
+                Spacer()
+                Text("自己紹介を入力してください")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(Color.customWhite)
+                
+                TextField("ここに自己紹介を入力...", text: $vm.newBio)
+                    .font(.headline)
+                    .frame(height: 55)
+                    .padding(.horizontal)
+                    .background(.white)
+                    .cornerRadius(10)
+                
+                Spacer()
+                VStack{
+                    Button {
+                        saveNewBio()
+                    } label: {
+                        Text("保存")
+                            .font(.headline)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                            .padding(.horizontal)
+                    }
+                    Button {
+                        vm.editingOption = nil
+                    } label: {
+                        Text("キャンセル")
+                            .font(.headline)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(.red)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                             .padding(.horizontal)
@@ -628,9 +744,3 @@ let interests = [
     "星座観察", "気象観測", "グランピング", "サバイバルキャンプ", "ロッククライミング",
     "パラグライダー", "スカイダイビング", "バンジージャンプ", "カヌー", "ラフティング"
 ]
-#Preview {
-    NavigationStack{
-        ProfileView(passedUserId: "", isUserCurrentlyLogOut: .constant(false), isFromChatView: false)
-    }
-}
-

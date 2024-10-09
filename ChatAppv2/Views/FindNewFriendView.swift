@@ -9,7 +9,8 @@ import SwiftUI
 import Firebase
 import FirebaseAuth
 
-final class CreateNewMessageViewModel: ObservableObject{
+final class FindNewFriendsView: ObservableObject{
+    @Published var currentUser:DBUser? = nil
     @Published var allUsers: [DBUser] = []
     @Published var filteredUsers: [DBUser] = []
     @Published var errorMessage = ""
@@ -26,9 +27,32 @@ final class CreateNewMessageViewModel: ObservableObject{
     
     init(){
         Task{
+            await getCurrentUser()
             await fetchAllUser()
-            filterUser()
         }
+    }
+    
+    func getCurrentUser() async{
+        guard let user = try? AuthenticationManager.shared.getAuthenticatedUser() else{
+            DispatchQueue.main.async {
+                self.currentUser =  nil
+            }
+            return
+        }
+        guard let dbUser = try? await UserManager.shared.getUser(userId: user.uid) else{
+            DispatchQueue.main.async {
+                self.currentUser =  nil
+            }
+            return
+        }
+        DispatchQueue.main.async {
+            self.currentUser =  dbUser
+        }
+    }
+    
+    func refresh()async{
+        await getCurrentUser()
+        await fetchAllUser()
     }
     
     
@@ -41,6 +65,8 @@ final class CreateNewMessageViewModel: ObservableObject{
             self.filteredUsers = filteredUsers
         }
     }
+    
+    
     private func fetchAllUser() async {
         let users = await UserManager.shared.getAllUsers()
         DispatchQueue.main.async {
@@ -49,15 +75,14 @@ final class CreateNewMessageViewModel: ObservableObject{
     }
 }
 
-struct CreateNewMessageView: View {
+struct FindNewFriendView: View {
     @State var showFilterMenu:Bool = false
-    var currentUser:DBUser
-    @ObservedObject var vm = CreateNewMessageViewModel()
-    @Environment(\.presentationMode) var presentationMode
+    @ObservedObject var vm = FindNewFriendsView()
     @State var gridItem:GridItem = GridItem(.fixed(150))
+    @State var otherUser:DBUser? = nil
+    @Binding var tabSelection:Int
     
     var body: some View {
-        NavigationStack{
             VStack(spacing:0){
                 customHeader
                     if showFilterMenu{
@@ -71,36 +96,36 @@ struct CreateNewMessageView: View {
                     ScrollView(.vertical,showsIndicators: false) {
                             LazyVGrid(columns: [gridItem,gridItem]) {
                                 ForEach(showFilterMenu ? vm.filteredUsers : vm.allUsers) { otherUser in
-                                    NavigationLink {
-                                        ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false)
+                                    Button{
+                                        self.otherUser = otherUser
                                     } label: {
-                                        OtherUserView(user: currentUser, otherUser: otherUser)
-                                            .shadow(radius: 2,y:4)
+                                        if let user = vm.currentUser{
+                                            OtherUserView(user: user, otherUser: otherUser)
+                                                .shadow(radius: 2,y:4)
+                                        }
+                                        
                                     }
                                 }
                             }
                         .padding(.top,20)
                     }
-                
-            }
+                    .refreshable {
+                        await vm.refresh()
+                    }
+                    .fullScreenCover(item: $otherUser) { otherUser in
+                        ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false, isUser: false, showTabBar: .constant(true))
+                        }
         }
     }
 }
 
-extension CreateNewMessageView{
+extension FindNewFriendView{
     private var customHeader:some View{
         HStack{
-            Button {
-                presentationMode.wrappedValue.dismiss()
-            } label: {
-                Image(systemName: "x.circle.fill")
-                    .font(.title)
-                    .foregroundColor(.black)
-            }
-            Spacer()
-            Text("友達を探す")
+              Text("友達を探す")
                 .font(.title3)
                 .fontWeight(.bold)
+                .padding(.leading)
             
             Spacer()
             
