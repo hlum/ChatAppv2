@@ -14,7 +14,8 @@ struct ChatAppv2App: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     var body: some Scene {
         WindowGroup {
-            SplashView(isAvtive: $isActive)
+            OnboardingView(isUserCurrentlyLoggedOut: .constant(true))
+//            SplashView(isAvtive: $isActive)
         }
     }
 
