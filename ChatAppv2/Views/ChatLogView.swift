@@ -247,7 +247,7 @@ struct ChatLogView:View {
                 }
             }
             .fullScreenCover(isPresented: $isShowingProfile) {
-                ProfileView(passedUserId: vm.recipient?.userId ?? "", isUserCurrentlyLogOut: .constant(false), isFromChatView: true, isUser: false)
+                ProfileView(passedUserId: vm.recipient?.userId ?? "", isUserCurrentlyLogOut: .constant(false), isFromChatView: true, isUser: false, showTabBar: .constant(true))
             }
             
             .task {

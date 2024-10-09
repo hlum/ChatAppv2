@@ -81,6 +81,7 @@ enum TabItems:Int,CaseIterable{
 struct MainTabView: View {
     @Namespace var nameSpace
     @StateObject var vm = MainTabViewModel()
+    @State var showTabBar:Bool = true
     
     @State var tabSelection: Int = 0
     var body: some View {
@@ -92,34 +93,17 @@ struct MainTabView: View {
                         FindNewFriendView( tabSelection: $tabSelection)
                             .tag(1)
                         
-                        ProfileView(passedUserId: currentUser.userId, isUserCurrentlyLogOut: $vm.isUserCurrentlyLoggedOut, isFromChatView: false, isUser: true)
+                        ProfileView(passedUserId: currentUser.userId, isUserCurrentlyLogOut: $vm.isUserCurrentlyLoggedOut, isFromChatView: false, isUser: true, showTabBar: $showTabBar)
                             .tag(2)
                     }
                 }
                 .task {
                     await vm.fetchCurrentUser()
                 }
-                .tabViewStyle(PageTabViewStyle())
-                ZStack{
-                    HStack{
-                        ForEach((TabItems.allCases), id: \.self){ item in
-                            Button{
-                                withAnimation(.bouncy) {
-                                    tabSelection = item.rawValue
-                                }
-                            } label: {
-                                customTabBar(item: item, isActive: tabSelection == item.rawValue)
-                            }
-                        }
-                    }
-                    .padding(6)
+                .tabViewStyle(.page(indexDisplayMode: .never))  
+                if showTabBar{
+                    tabBar
                 }
-                .frame(height: 55)
-                .background(.thinMaterial)
-                .cornerRadius(35)
-                .padding(.horizontal, 70)
-                .ignoresSafeArea()
-                .padding(.bottom,40)
             }
             .fullScreenCover(isPresented: $vm.isUserCurrentlyLoggedOut, onDismiss: {
                 Task{
@@ -136,6 +120,29 @@ struct MainTabView: View {
 
 
 extension MainTabView {
+    private var tabBar:some View{
+        ZStack{
+            HStack{
+                ForEach((TabItems.allCases), id: \.self){ item in
+                    Button{
+                        withAnimation(.bouncy) {
+                            tabSelection = item.rawValue
+                        }
+                    } label: {
+                        customTabBar(item: item, isActive: tabSelection == item.rawValue)
+                    }
+                }
+            }
+            .padding(6)
+        }
+        .frame(height: 55)
+        .background(.thinMaterial)
+        .cornerRadius(35)
+        .padding(.horizontal, 70)
+        .ignoresSafeArea()
+        .padding(.bottom,40)
+
+    }
     func customTabBar(item:TabItems,isActive:Bool)->some View{
         ZStack{
             if isActive{
