@@ -19,7 +19,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		B50089622C82165C0030C585 /* ChatAppv2.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ChatAppv2.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B50089622C82165C0030C585 /* Hello.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Hello.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -28,7 +28,7 @@
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = B50089612C82165C0030C585 /* ChatAppv2 */;
+			target = B50089612C82165C0030C585 /* Hello */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -67,7 +67,7 @@
 		B50089632C82165C0030C585 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				B50089622C82165C0030C585 /* ChatAppv2.app */,
+				B50089622C82165C0030C585 /* Hello.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -75,9 +75,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		B50089612C82165C0030C585 /* ChatAppv2 */ = {
+		B50089612C82165C0030C585 /* Hello */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B50089702C82165E0030C585 /* Build configuration list for PBXNativeTarget "ChatAppv2" */;
+			buildConfigurationList = B50089702C82165E0030C585 /* Build configuration list for PBXNativeTarget "Hello" */;
 			buildPhases = (
 				B500895E2C82165C0030C585 /* Sources */,
 				B500895F2C82165C0030C585 /* Frameworks */,
@@ -90,7 +90,7 @@
 			fileSystemSynchronizedGroups = (
 				B50089642C82165C0030C585 /* ChatAppv2 */,
 			);
-			name = ChatAppv2;
+			name = Hello;
 			packageProductDependencies = (
 				B50089762C8217E50030C585 /* FirebaseAnalytics */,
 				B50089782C8217E50030C585 /* FirebaseAuth */,
@@ -103,7 +103,7 @@
 				B53FB1D42CAF814C00BB9E73 /* Lottie */,
 			);
 			productName = ChatAppv2;
-			productReference = B50089622C82165C0030C585 /* ChatAppv2.app */;
+			productReference = B50089622C82165C0030C585 /* Hello.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -140,7 +140,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				B50089612C82165C0030C585 /* ChatAppv2 */,
+				B50089612C82165C0030C585 /* Hello */,
 			);
 		};
 /* End PBXProject section */
@@ -361,7 +361,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B50089702C82165E0030C585 /* Build configuration list for PBXNativeTarget "ChatAppv2" */ = {
+		B50089702C82165E0030C585 /* Build configuration list for PBXNativeTarget "Hello" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B50089712C82165E0030C585 /* Debug */,
