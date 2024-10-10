@@ -234,7 +234,7 @@ struct ProfileView: View {
                         .foregroundColor(.white)
                         .onTapGesture {
                             if isUser{
-                                withAnimation {
+                                withAnimation(.easeIn) {
                                     vm.editingOption = .EditingName
                                 }
                             }
@@ -367,7 +367,9 @@ struct ProfileView: View {
                 .multilineTextAlignment(.center)
             if isUser{
                 Button {
-                    vm.editingOption = .EditingBio
+                    withAnimation(.easeIn){
+                        vm.editingOption = .EditingBio
+                    }
                 } label: {
                     Image(systemName: "pencil")
                         .font(.title2)
@@ -416,7 +418,9 @@ struct ProfileView: View {
                 Spacer()
                 if isUser{
                     Button {
-                        vm.editingOption = .EditiingPreferences
+                        withAnimation(.easeIn){
+                            vm.editingOption = .EditiingPreferences
+                        }
                     } label: {
                         Image(systemName: "pencil")
                             .font(.title2)
@@ -494,7 +498,9 @@ struct ProfileView: View {
                 ZStack{
                     Color.customBlack.ignoresSafeArea()
                     Button {
-                        vm.editingOption = nil
+                        withAnimation(.easeIn){
+                            vm.editingOption = nil
+                        }
                     } label: {
                         Text("戻る")
                             .font(.headline)
@@ -539,7 +545,9 @@ struct ProfileView: View {
             Task{
                 await vm.updateName()
                 DispatchQueue.main.async {
-                    vm.editingOption = nil
+                    withAnimation(.default){
+                        vm.editingOption = nil
+                    }
                 }
             }
             
@@ -553,7 +561,9 @@ struct ProfileView: View {
             Task{
                 await vm.updateBio()
                 DispatchQueue.main.async {
-                    vm.editingOption = nil
+                    withAnimation(.easeIn){
+                        vm.editingOption = nil
+                    }
                 }
             }
         }
