@@ -71,7 +71,7 @@ enum TabItems:Int,CaseIterable{
         case .RecentMessagesView:
             "message.fill"
         case .FindNewFriendView:
-            "person.2.badge.plus.fill"
+            "person.2.fill"
         case .ProfileView:
             "person.circle.fill"
         }
