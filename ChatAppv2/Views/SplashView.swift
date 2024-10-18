@@ -19,8 +19,8 @@ struct SplashView: View {
                     LottieView(animationFileName: "dancing_cat", loopMode: .loop)
                 }
                 .onAppear{
-                    DispatchQueue.main.asyncAfter(deadline: .now()+5){
-                        withAnimation(.easeIn) {
+                    DispatchQueue.main.asyncAfter(deadline: .now()+3){
+                        withAnimation {
                             self.isAvtive = true
                         }
                     }

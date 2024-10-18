@@ -12,7 +12,7 @@ struct LottieView:UIViewRepresentable{
     
     var animationFileName:String
     let loopMode:LottieLoopMode
-    
+//    let frame:CGRect
     func updateUIView(_ uiView: UIViewType, context: Context) {
     }
     
@@ -22,6 +22,8 @@ struct LottieView:UIViewRepresentable{
         
         animationView.play()
         animationView.contentMode = .scaleAspectFit
+//        animationView.frame = frame
+        animationView.sizeToFit()
         return animationView
         
     }

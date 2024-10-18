@@ -34,25 +34,14 @@ extension OnboardingViewModel{
     
     
     func signInWithGoogle() async throws {
-        await MainActor.run {
-            isLoading = true
-            progress = 0.0
-        }
-        
-        defer {
-            Task { @MainActor in
-                isLoading = false
-                progress = 1.0
-            }
-        }
-        
+            
         do {
             let helper = SignInGoogleHelper()
-            await updateProgress(0.2)
+            
             
             
             let tokens = try await helper.signIn()
-            await updateProgress(0.4)
+            
             
 #warning("Change this to make sure the email is from the right school")
 //            guard let email = tokens.email,
@@ -62,12 +51,12 @@ extension OnboardingViewModel{
 //            }
 
             
-            await updateProgress(0.6)
+            
             let authDataResult = try await AuthenticationManager.shared.signInWithGoogle(tokens:tokens)
 
             // Check if the user is new
             let isNewUser = !(try await UserManager.shared.checkIfUserExistInDatabase(userId: authDataResult.uid))
-            await updateProgress(0.8)
+            
             
             await MainActor.run {
                 if isNewUser {
@@ -77,7 +66,7 @@ extension OnboardingViewModel{
                 }
             }
             
-            await updateProgress(1.0)
+            
         } catch let error{
             await MainActor.run {
                 // Handle error, maybe show an alert
