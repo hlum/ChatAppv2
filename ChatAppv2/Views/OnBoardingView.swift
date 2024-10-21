@@ -1,5 +1,7 @@
 import SwiftUI
 import _PhotosUI_SwiftUI
+import SplineRuntime
+
 
 final class OnboardingViewModel: ObservableObject {
     @Published var name: String = ""
@@ -161,6 +163,7 @@ struct OnboardingView: View {
         removal: .move(edge: .leading))
     @StateObject var vm = OnboardingViewModel()
     @Binding var isUserCurrentlyLoggedOut : Bool
+    @State var is3DContentLoaded:Bool = false
     
     let interests = [
         // 元のリスト
@@ -185,7 +188,7 @@ struct OnboardingView: View {
     @Namespace var nameSpace
     var body: some View {
             ZStack {
-                Color.customBlack.ignoresSafeArea()
+                Color.bg.ignoresSafeArea()
                 ZStack {
                     switch onboardingState {
                     case 0:
@@ -249,38 +252,35 @@ extension OnboardingView {
             .foregroundColor(Color(.customWhite))
             .frame(height: 55)
             .frame(maxWidth: .infinity)
-            .background(Color.customOrange)
+            .background(Color.black)
             .cornerRadius(10)
             .onTapGesture {
                 withAnimation(.easeInOut) {
                     handleNextButtonPressed()
                 }
             }
-            .shadow(color: Color.customOrange, radius: 10)
+            .shadow(color:.gray,radius: 4,y:-6)
     }
     
+
     private var welcomeSection: some View {
         VStack(spacing: 40) {
-            Spacer()
-            Text("友達を探しましょう。。")
-                .font(.largeTitle)
-                .fontWeight(.semibold)
-                .foregroundColor(Color.customWhite)
-                .overlay(
-                    Capsule(style: .continuous)
-                        .frame(height: 3)
-                        .offset(y: 5)
-                        .foregroundColor(.white),
-                    alignment: .bottom
-                )
-            Text("校内の同じ趣味を持っている人と話し合いましょう。。")
-                .fontWeight(.medium)
-                .foregroundColor(Color.customWhite)
-            Spacer()
-            Spacer()
+            let url = URL(string: "https://build.spline.design/PjTLqFsWTtt20lmNP-hV/scene.splineswift")!
+            
+            SplineView(sceneFileURL: url).ignoresSafeArea(.all)
+            
+            if !is3DContentLoaded{
+                ProgressView("Loading 3D Content...")
+                    .scaleEffect(1.5)
+                    .foregroundColor(.white)
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                            is3DContentLoaded = true
+                        }
+                    }
+                
+            }
         }
-        .multilineTextAlignment(.center)
-        .padding(30)
     }
     
     private var addNameSection: some View {
