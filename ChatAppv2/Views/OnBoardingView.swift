@@ -252,14 +252,14 @@ extension OnboardingView {
             .foregroundColor(Color(.customWhite))
             .frame(height: 55)
             .frame(maxWidth: .infinity)
-            .background(Color.customOrange)
+            .background(Color.black)
             .cornerRadius(10)
             .onTapGesture {
                 withAnimation(.easeInOut) {
                     handleNextButtonPressed()
                 }
             }
-            .shadow(color: Color.customOrange, radius: 10)
+            .shadow(color:.gray,radius: 4,y:-6)
     }
     
 
