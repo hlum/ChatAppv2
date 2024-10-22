@@ -93,7 +93,7 @@ struct MainTabView: View {
                         FindNewFriendView( tabSelection: $tabSelection)
                             .tag(1)
                         
-                        ProfileView(passedUserId: currentUser.userId, isUserCurrentlyLogOut: $vm.isUserCurrentlyLoggedOut, isFromChatView: false, isUser: true, showTabBar: $showTabBar)
+                        ProfileView(passedUserId: currentUser.userId, isUserCurrentlyLogOut: $vm.isUserCurrentlyLoggedOut, isFromChatView: false, isUser: true, showTabBar: $showTabBar, tabSelection: $tabSelection)
                             .tag(2)
                     }
                 }

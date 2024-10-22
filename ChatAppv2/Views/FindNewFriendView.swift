@@ -25,12 +25,6 @@ final class FindNewFriendsView: ObservableObject{
         }
     }
     
-    init(){
-        Task{
-            await getCurrentUser()
-            await fetchAllUser()
-        }
-    }
     
     func getCurrentUser() async{
         guard let user = try? AuthenticationManager.shared.getAuthenticatedUser() else{
@@ -58,16 +52,17 @@ final class FindNewFriendsView: ObservableObject{
     
     func filterUser(){
         let filteredUsers = allUsers.filter { user in
-            user.age ?? 0.0 >= initialAge && user.age ?? 0.0 <= finalAge
+            user.age ?? 18 >= initialAge && user.age ?? 100 <= finalAge
         }
         
         DispatchQueue.main.async {
+            print("filteredUser count : \(filteredUsers.count)")
             self.filteredUsers = filteredUsers
         }
     }
     
     
-    private func fetchAllUser() async {
+    func fetchAllUser() async {
         let users = await UserManager.shared.getAllUsers()
         DispatchQueue.main.async {
             self.allUsers = users
@@ -109,11 +104,20 @@ struct FindNewFriendView: View {
                             }
                         .padding(.top,20)
                     }
+                    .onAppear{
+                        Task{
+                            await vm.getCurrentUser()
+                            await vm.fetchAllUser()
+                            vm.filterUser()
+                            print("vm.allUser : \(vm.allUsers.count)")
+                            
+                        }
+                    }
                     .refreshable {
                         await vm.refresh()
                     }
                     .fullScreenCover(item: $otherUser) { otherUser in
-                        ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false, isUser: false, showTabBar: .constant(true))
+                        ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false, isUser: false, showTabBar: .constant(true), tabSelection: .constant(2))
                         }
         }
     }

@@ -177,13 +177,15 @@ struct ProfileView: View {
     var isFromChatView:Bool
     @State var user : DBUser? = nil
     @Binding var showTabBar:Bool
+    @Binding var tabSelection:Int
     
-    init(passedUserId:String,isUserCurrentlyLogOut:Binding<Bool>,isFromChatView:Bool,isUser:Bool,showTabBar:Binding<Bool>){
+    init(passedUserId:String,isUserCurrentlyLogOut:Binding<Bool>,isFromChatView:Bool,isUser:Bool,showTabBar:Binding<Bool>,tabSelection:Binding<Int>){
         _vm = StateObject(wrappedValue: ProfileViewModel(passedUserId: passedUserId))
         self.isUser = isUser
         _isUserCurrentlyLogOut = isUserCurrentlyLogOut
         self.isFromChatView = isFromChatView
         _showTabBar = showTabBar
+        _tabSelection = tabSelection
     }
 
     // Custom colors
@@ -525,6 +527,7 @@ struct ProfileView: View {
         Button {
             vm.logOut()
             isUserCurrentlyLogOut = !AuthenticationManager.shared.checkIfUserIsAuthenticated()
+            tabSelection = 0
         } label: {
             Text("サインアウトする")
                 .font(.headline)
