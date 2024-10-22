@@ -152,16 +152,15 @@ extension MainTabView {
                     .matchedGeometryEffect(id: "TabItemId", in: nameSpace)
             }
             HStack{
-                if #available(iOS 18.0, *) {
+                if #available(iOS 17.0, *) {
                     Image(systemName: item.imageName)
                         .tint(isActive ? .white : .gray)
-                        .symbolEffect(.wiggle, options: .default, value: tabSelection)
+                        .symbolEffect(.bounce, options: .default, value: tabSelection)
                         .font(.title)
                 } else {
                     // Fallback on earlier versions
                     Image(systemName: item.imageName)
                         .tint(isActive ? .white : .gray)
-                        .symbolEffect(.bounce, options: .default, value: tabSelection)
                         .font(.title3)
                 }
                 

@@ -221,6 +221,7 @@ struct RecentMessagesView: View {
                     
                     
                 }
+                
                 .onChange(of: tabSelection, { oldValue, newValue in
                     if newValue == 0{
                         Task{

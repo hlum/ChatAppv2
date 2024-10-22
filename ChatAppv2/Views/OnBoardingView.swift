@@ -1,7 +1,5 @@
 import SwiftUI
 import _PhotosUI_SwiftUI
-import SplineRuntime
-
 
 final class OnboardingViewModel: ObservableObject {
     @Published var name: String = ""
@@ -264,24 +262,62 @@ extension OnboardingView {
     
 
     private var welcomeSection: some View {
-        VStack(spacing: 40) {
-            let url = URL(string: "https://build.spline.design/PjTLqFsWTtt20lmNP-hV/scene.splineswift")!
-            
-            SplineView(sceneFileURL: url).ignoresSafeArea(.all)
-            
-            if !is3DContentLoaded{
-                ProgressView("Loading 3D Content...")
-                    .scaleEffect(1.5)
-                    .foregroundColor(.white)
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                            is3DContentLoaded = true
-                        }
-                    }
+        ZStack {
+            // Background Image
+            Image(.background)
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+
+            // Main Content Layer
+            VStack(spacing: 30) {
                 
+                // Large Title with Shadow
+                Text("HELLO")
+                    .font(.system(size: 80, weight: .bold))
+                    .foregroundStyle(Color.white)
+                    .shadow(color: .black.opacity(0.4), radius: 10, x: 0, y: 8)
+                    .padding(.top, 50)
+                
+                // Description Text
+                Text("""
+    新しい友達を見つけたり,
+    
+    趣味が同じの友達を探したり
+    
+    HELLOなら、
+    
+    日本電子専門学校にいる人たちと
+    
+    簡単につながることが
+    
+    できます。
+    
+    趣味や関心事を共有したり、
+    
+    気軽な会話や深い交流を楽しんだり
+    
+    しましょう。
+    """)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.black)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: 300)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(.ultraThinMaterial)
+                            .opacity(0.8)
+                            .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 6)
+                    )
+                    .padding(.horizontal, 20)
+                
+                Spacer()
             }
+            .padding(.bottom, 100) // Spacing from the bottom
         }
     }
+
     
     private var addNameSection: some View {
         VStack(spacing: 20) {
