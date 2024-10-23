@@ -185,58 +185,59 @@ struct OnboardingView: View {
     ]
     @Namespace var nameSpace
     var body: some View {
-            ZStack {
-                Color.bg.ignoresSafeArea()
                 ZStack {
-                    switch onboardingState {
-                    case 0:
-                        welcomeSection
-                            .transition(transition)
-                    case 1:
-                        addNameSection
-                            .transition(transition)
-                    case 2:
-                        addAgeSection
-                            .transition(transition)
-                    case 3:
-                        addGenderSection
-                            .transition(transition)
-                    case 4:
-                        wantToTalkSection
-                            .transition(transition)
-                    case 5:
-                        userInterestsSection
-                            .transition(transition)
-                    default:
-                        RoundedRectangle(cornerRadius: 25.0)
-                            .foregroundColor(.green)
-                    }
-                }
-                VStack {
-                    Spacer()
+                    Color.bg.ignoresSafeArea()
+                        switch onboardingState {
+                        case 0:
+                            welcomeSection
+                                .transition(transition)
+                        case 1:
+                            addNameSection
+                                .transition(transition)
+                        case 2:
+                            addAgeSection
+                                .transition(transition)
+                        case 3:
+                            addGenderSection
+                                .transition(transition)
+                        case 4:
+                            wantToTalkSection
+                                .transition(transition)
+                        case 5:
+                            userInterestsSection
+                                .transition(transition)
+                        default:
+                            RoundedRectangle(cornerRadius: 25.0)
+                                .foregroundColor(.green)
+                        }
+                        
+                        VStack {
+                            Spacer()
+                            
+                            signUpButton
+                        }
+                        .padding(10)
                     
-                    signUpButton
-                }
-                .padding(30)
-                
-                   if vm.isLoading {
-                       ZStack {
-                           Color.white.ignoresSafeArea()
-                           LottieView(animationFileName: "dancing_cat", loopMode: .loop)
-                               .ignoresSafeArea()
-                           
-                           
-                           Text("\(Int(vm.progress * 100))%")
-                               .foregroundColor(.black)
-                               .font(.headline)
+                    
+                       if vm.isLoading {
+                           ZStack {
+                               Color.white.ignoresSafeArea()
+                               LottieView(animationFileName: "dancing_cat", loopMode: .loop)
+                                   .ignoresSafeArea()
+                               
+                               
+                               Text("\(Int(vm.progress * 100))%")
+                                   .foregroundColor(.black)
+                                   .font(.headline)
+                           }
                        }
-                   }
+                }
+            
+                .alert(isPresented: $vm.showAlert) {
+                    Alert(title: Text(vm.alertTitle))
+                    
             }
-        
-            .alert(isPresented: $vm.showAlert) {
-                Alert(title: Text(vm.alertTitle))
-                
-            }
+            
 
         }
  }
@@ -266,7 +267,8 @@ extension OnboardingView {
             // Background Image
             Image(.background)
                 .resizable()
-                .scaledToFill()
+                .opacity(0.3)
+                .cornerRadius(40)
                 .ignoresSafeArea()
 
             // Main Content Layer

@@ -71,6 +71,7 @@ final class FindNewFriendsView: ObservableObject{
 }
 
 struct FindNewFriendView: View {
+    @AppStorage("showExplaination") var showExplaination:Bool = true
     @State var showFilterMenu:Bool = false
     @ObservedObject var vm = FindNewFriendsView()
     @State var gridItem:GridItem = GridItem(.fixed(150))
@@ -78,50 +79,68 @@ struct FindNewFriendView: View {
     @Binding var tabSelection:Int
     
     var body: some View {
+        ZStack{
             VStack(spacing:0){
                 customHeader
-                    
-                    if showFilterMenu{
-                        VStack{
-                            Text("\(Int(vm.initialAge))歳 から \(Int(vm.finalAge))歳")
-                            AgeRangeView(initialAge: $vm.initialAge, finalAge: $vm.finalAge)
-                        }
-                        .transition(.move(edge: .top))
-                            
+                
+
+                
+                
+                if showFilterMenu{
+                    VStack{
+                        Text("\(Int(vm.initialAge))歳 から \(Int(vm.finalAge))歳")
+                        AgeRangeView(initialAge: $vm.initialAge, finalAge: $vm.finalAge)
                     }
-                    ScrollView(.vertical,showsIndicators: false) {
-                            LazyVGrid(columns: [gridItem,gridItem]) {
-                                ForEach(showFilterMenu ? vm.filteredUsers : vm.allUsers) { otherUser in
-                                    Button{
-                                        self.otherUser = otherUser
-                                    } label: {
-                                        if let user = vm.currentUser{
-                                            OtherUserView(user: user, otherUser: otherUser)
-                                                .shadow(radius: 2,y:4)
-                                        }
-                                        
-                                    }
+                    .transition(.move(edge: .top))
+                    
+                }
+                ScrollView(.vertical,showsIndicators: false) {
+                    LazyVGrid(columns: [gridItem,gridItem]) {
+                        ForEach(showFilterMenu ? vm.filteredUsers : vm.allUsers) { otherUser in
+                            Button{
+                                self.otherUser = otherUser
+                            } label: {
+                                if let user = vm.currentUser{
+                                    OtherUserView(user: user, otherUser: otherUser)
+                                        .shadow(radius: 2,y:4)
                                 }
-                            }
-                        .padding(.top,20)
-                    }
-                    .onChange(of: tabSelection, { _, newValue in
-                        if newValue == 1{
-                            Task{
-                                await vm.getCurrentUser()
-                                await vm.fetchAllUser()
-                                vm.filterUser()
+                                
                             }
                         }
-                    })//if i use .onAppear it won't work when the view is swiped because swiftui keep view in memory
+                    }
+                    .padding(.top,20)
+                }
+                .onAppear{
+                    Task{
+                        await vm.getCurrentUser()
+                        await vm.fetchAllUser()
+                        vm.filterUser()
+                    }
+                }
+                .onChange(of: tabSelection, { _, newValue in
                     
-                    .refreshable {
-                        await vm.refresh()
-                    }
-                    .fullScreenCover(item: $otherUser) { otherUser in
-                        ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false, isUser: false, showTabBar: .constant(true), tabSelection: .constant(2))
+                    if newValue == 1{
+                        print("run")
+                        Task{
+                            await vm.getCurrentUser()
+                            await vm.fetchAllUser()
+                            vm.filterUser()
                         }
+                    }
+                })//if i use just .onAppear it won't work when the view is swiped because swiftui keep view in memory
+                
+                .refreshable {
+                    await vm.refresh()
+                }
+                .fullScreenCover(item: $otherUser) { otherUser in
+                    ProfileView(passedUserId: otherUser.userId, isUserCurrentlyLogOut: .constant(false), isFromChatView: false, isUser: false, showTabBar: .constant(true), tabSelection: .constant(2))
+                }
+            }
+            if showExplaination{
+                explaination
+            }
         }
+        .foregroundStyle(Color.black)
     }
 }
 
@@ -149,4 +168,45 @@ extension FindNewFriendView{
         .frame(height: 55)
         
     }
+    
+    
+    private var explaination:some View{
+        ZStack{
+            
+            Color.white.ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation {
+                        showExplaination = false
+                    }
+                }
+            
+            VStack{
+                HStack{
+                    Button {
+                        withAnimation {
+                            showExplaination = false
+                        }
+                    } label: {
+                        Image(systemName: "x.circle.fill")
+                            .font(.title)
+                    }
+                    .padding()
+                    Spacer()
+                }
+                
+                Image(.explainationPic)
+                    .resizable()
+                    .scaledToFit()
+                Spacer()
+            }
+        }
+    }
 }
+
+
+#Preview {
+    FindNewFriendView(showFilterMenu: false, tabSelection: .constant(1))
+}
+
+
+
