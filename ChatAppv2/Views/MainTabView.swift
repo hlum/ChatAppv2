@@ -105,6 +105,9 @@ struct MainTabView: View {
                     tabBar
                 }
             }
+            .onChange(of: tabSelection, { _, newValue in
+                print(newValue)
+            })
             .fullScreenCover(isPresented: $vm.isUserCurrentlyLoggedOut, onDismiss: {
                 Task{
                     await vm.fetchCurrentUser()

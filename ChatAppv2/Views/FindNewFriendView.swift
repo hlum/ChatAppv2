@@ -56,7 +56,7 @@ final class FindNewFriendsView: ObservableObject{
         }
         
         DispatchQueue.main.async {
-            print("filteredUser count : \(filteredUsers.count)")
+            
             self.filteredUsers = filteredUsers
         }
     }
@@ -80,6 +80,7 @@ struct FindNewFriendView: View {
     var body: some View {
             VStack(spacing:0){
                 customHeader
+                    
                     if showFilterMenu{
                         VStack{
                             Text("\(Int(vm.initialAge))歳 から \(Int(vm.finalAge))歳")
@@ -104,15 +105,16 @@ struct FindNewFriendView: View {
                             }
                         .padding(.top,20)
                     }
-                    .onAppear{
-                        Task{
-                            await vm.getCurrentUser()
-                            await vm.fetchAllUser()
-                            vm.filterUser()
-                            print("vm.allUser : \(vm.allUsers.count)")
-                            
+                    .onChange(of: tabSelection, { _, newValue in
+                        if newValue == 1{
+                            Task{
+                                await vm.getCurrentUser()
+                                await vm.fetchAllUser()
+                                vm.filterUser()
+                            }
                         }
-                    }
+                    })//if i use .onAppear it won't work when the view is swiped because swiftui keep view in memory
+                    
                     .refreshable {
                         await vm.refresh()
                     }
