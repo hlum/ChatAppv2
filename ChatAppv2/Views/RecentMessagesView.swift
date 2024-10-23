@@ -177,6 +177,7 @@ class MainViewMessageViewModel:ObservableObject{
 
 
 struct RecentMessagesView: View {
+    @AppStorage("showButtonExplaination") var showButtonExplaination:Bool = true
     @Namespace var nameSpace
     @State var showWantToTalkMenu :Bool = false
     @Binding var isUserCurrentlyLoggedOut :Bool
@@ -196,7 +197,7 @@ struct RecentMessagesView: View {
                         .refreshable {
                             await vm.refreshData()
                         }
-                        
+
                         if vm.recentMessages.isEmpty{
                             VStack{
                                 Image(systemName: "plus.message.fill")
@@ -219,7 +220,7 @@ struct RecentMessagesView: View {
                         }
                     }
                     
-                    
+
                 }
                 
                 .onChange(of: tabSelection, { oldValue, newValue in
@@ -242,19 +243,34 @@ struct RecentMessagesView: View {
                 }
                 .toolbar(.hidden)
                 
-//                if vm.isLoading {
-//                    ZStack {
-//                        
-//                        LottieView(animationFileName: "dancing_cat", loopMode: .loop)
-//                            .ignoresSafeArea()
-//                        
-//                        
-//                        Text("\(Int(vm.progress * 100))%")
-//                            .foregroundColor(.black)
-//                            .font(.headline)
-//
-//                    }
-//                }
+                    
+                if showButtonExplaination{
+                    ZStack{
+                        Color.gray.opacity(0.1).ignoresSafeArea()
+                        VStack{
+                            Image(.arrow)
+                                .resizable()
+                                .frame(width: 100,height: 100)
+                                .padding(.top,50)
+                                .padding(.leading,10)
+                                .rotationEffect(.degrees(40))
+                            
+                            Text("クリックして今日の気分を更新しましょう！")
+                                .font(.headline)
+                                .bold()
+//                                .padding(.top,50)
+                            Spacer()
+                        }
+                            
+                    }
+                    .onTapGesture {
+                        withAnimation {
+                            showButtonExplaination = false
+                            showWantToTalkMenu = true
+                        }
+                    }
+                }
+                
                 
             }//End of ZStack
             .alert(vm.alertMessage, isPresented: $vm.showAlert) {
@@ -284,6 +300,7 @@ struct RecentMessagesView: View {
                 Text("今の気分を　\(vm.wantToTalk.rawValue)　に変更しますか？。")
             }
         }
+        .foregroundStyle(Color.black)
 
     }
 }
@@ -335,8 +352,8 @@ extension RecentMessagesView{
                         Text("\(name) \(currentUser.wantToTalk.rawValue)")
                             .font(.system(size: 24,weight:.bold))
                             .frame(height:55)
+                        
                     }
-
                 }
                 
                 
@@ -477,5 +494,13 @@ extension RecentMessagesView{
         }
 }
     
+}
+
+#Preview {
+    RecentMessagesView(
+        showWantToTalkMenu: true,
+        isUserCurrentlyLoggedOut: .constant(false),
+        tabSelection: .constant(0)
+    )
 }
 
