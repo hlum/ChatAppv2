@@ -45,7 +45,8 @@ extension OnboardingViewModel{
             
 #warning("Change this to make sure the email is from the right school")
 //            guard let email = tokens.email,
-//                email.hasSuffix("@jec.ac.jp") else{
+//                email.hasSuffix("@jec.ac.jp") || email == "hello.app.tester.denshi@gmail.com"
+//            else{
 //                await self.showAlertTitle(title: "学校のメール以外はログイン出来ません。")
 //                return
 //            }
